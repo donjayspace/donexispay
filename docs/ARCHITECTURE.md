@@ -1,58 +1,35 @@
 # System Architecture
 
 ## Decision
-Start with a Next.js App Router full-stack modular monolith. Business modules live in `src/server/modules/`; shared technical infrastructure lives in `src/server/infrastructure/`. Background workers may run as separate processes when required, without immediately splitting business modules into microservices.
+Use a Next.js App Router + TypeScript modular monolith with PostgreSQL and Prisma. Business logic lives in `src/server/modules/`; shared technical capabilities live in `src/server/infrastructure/`. Background workers may run separately while reusing module services; do not split into microservices without a documented need.
 
-## Layers
-1. Presentation: `src/app/`, `src/components/`. Renders UI; never owns authoritative financial rules.
-2. Transport: `src/app/api/`. Validates requests, authenticates callers, invokes services, maps results to HTTP.
-3. Business: `src/server/modules/`. Owns business policies, state transitions, orchestration, and module invariants.
-4. Infrastructure: `src/server/infrastructure/`. Database client, config, logging, queue, cryptography, monitoring, and technical adapters.
-5. Persistence: PostgreSQL through Prisma, with constraints, indexes, and controlled migrations.
+## Request path
+Browser/API request → route handler or server page → authentication and authorization → validated module service → repository/Prisma → database. Provider requests go through an adapter, never directly from React components.
+
+## Layers and ownership
+- `src/app/`: pages, layouts, route handlers, metadata, transport-level validation.
+- `src/components/`: presentation and interaction components.
+- `src/server/modules/`: business rules, use cases, schemas, repositories, provider orchestration, audit behavior.
+- `src/server/infrastructure/`: database transactions, security, encryption, rate limiting, logging, cache/queues, storage, observability.
+- `src/lib/`: lightweight shared helpers. Do not import server secrets or Prisma into client components.
+- `prisma/`: schema, reviewed migrations, and synthetic non-production seed data.
 
 ## Module ownership
-- auth: authentication and sessions.
-- users: user profiles and account state.
-- merchants: merchant profile, onboarding, memberships, and status.
-- checkout: checkout session lifecycle and expiry.
-- payments: payment records, attempts, idempotency, and state transitions.
-- providers: adapter contracts, provider SDKs, status mapping, and provider errors.
-- refunds: eligibility, amounts, approval, and refund lifecycle.
-- webhooks: inbound event verification/deduplication and outbound delivery.
-- ledger: accounting entries where required by the approved operating model.
-- reconciliation: provider comparisons and discrepancy workflow.
-- audit: privileged and financial action history.
-- notifications: delivery orchestration.
-- reporting: authorized summaries and exports.
-- admin: privileged use cases; it must call owning module services rather than duplicate rules.
+Auth owns user/admin identity and sessions; merchants owns workspaces/membership; onboarding owns eligibility workflow; checkout owns sessions and return URL policy; payments owns payment state/attempts; providers owns adapters/capabilities; payment-methods owns supported-method metadata; transactions owns history; customers owns merchant customer records; refunds owns refund lifecycle; billing owns platform invoices; payment-links owns shareable links; webhooks owns verified event processing; settlements/reconciliation own settlement matching; pricing owns fee rules; risk owns review cases; notifications owns delivery; audit owns immutable audit records; analytics owns derived metrics.
 
 ## Dependency rules
-- Route handlers call public module services.
-- Modules may call their own repositories and public interfaces from other modules.
-- A module must not import another module's private repository.
-- Provider SDK calls remain behind provider adapters.
-- Infrastructure must not implement business decisions.
-- Client components must not import server-only code.
-- Cross-module operations use explicit contracts and documented transaction boundaries.
+1. Modules call other modules through public service interfaces, not private repositories.
+2. Avoid circular imports.
+3. Route handlers authenticate, validate, call a use case, and map a safe response.
+4. Client components never import Prisma, server modules, provider SDKs, or secret-bearing configuration.
+5. Normalize provider statuses and payloads at the adapter boundary.
+6. UI visibility is not authorization.
 
-## Payment flow
-1. Validate caller, merchant, checkout, amount, and currency.
-2. Persist an internal payment attempt and idempotency record.
-3. Call provider adapter outside a long-running database transaction.
-4. Persist provider response and references.
-5. Resolve status from authoritative provider information, verified webhook, or status query.
-6. Reconcile uncertain outcomes; never assume a timeout means failure.
+## Payment transaction pattern
+Persist internal payment/attempt and idempotency records in a short transaction; commit; call the provider with a stable idempotency reference; persist the normalized response. Never hold a DB transaction open during network I/O. On ambiguous outcome, record an unknown/reviewable state and reconcile before retrying.
 
-## Database rules
-- Use transactions for atomic internal state changes.
-- Avoid holding DB transactions open across slow provider calls.
-- Use unique constraints for idempotency and provider event deduplication.
-- Preserve financial history and audit records.
-- Do not use floating-point arithmetic for money.
-- Use an outbox or durable queue for critical asynchronous events.
+## Financial correctness
+Use exact amounts, currency-specific exponents, explicit state transitions, uniqueness constraints for idempotency/provider events, and audit records for privileged actions. Correct completed financial history through compensating records, not destructive rewrites.
 
-## Deployment
-Deploy the Next.js application and PostgreSQL, plus a durable queue/worker when required. In-memory background tasks must not be relied upon for critical financial work. Production must include secret management, backups, monitoring, migration strategy, rollback, and recovery procedures.
-
-## Future service extraction
-Extract a module only when scaling, ownership, or security needs justify it. Define data ownership, API/event contracts, authentication, retry semantics, observability, and consistency before extraction.
+## Evolution
+Extract a service only when independent scaling, isolation, ownership, or release cadence justifies the cost. Define contracts, event semantics, retries, data ownership, and reconciliation in an ADR first.
