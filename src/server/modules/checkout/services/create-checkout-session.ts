@@ -69,7 +69,7 @@ export async function createCheckoutSession(input: {
     throw new AppError("FORBIDDEN", "Merchant is not permitted to create checkout sessions.", 403);
   }
 
-  const requestHash = sha256(JSON.stringify(input.data));
+  const requestHash = sha256(JSON.stringify({ data: input.data, paymentLinkId: input.paymentLinkId ?? null }));
   const existing = await prisma.idempotencyRecord.findUnique({
     where: {
       merchantId_operation_key: {
