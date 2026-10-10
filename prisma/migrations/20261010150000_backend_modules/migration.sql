@@ -1,3 +1,5 @@
+ALTER TABLE "Payment" ADD COLUMN "providerRedirectUrl" TEXT;
+
 -- Durable data models for the modular payment-orchestration backend.
 CREATE TYPE "RefundStatus" AS ENUM ('REQUESTED', 'PENDING', 'SUCCEEDED', 'FAILED', 'CANCELED');
 CREATE TYPE "PaymentLinkStatus" AS ENUM ('ACTIVE', 'INACTIVE', 'EXPIRED');
