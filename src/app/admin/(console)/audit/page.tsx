@@ -1,8 +1,10 @@
+import { requireAdminPermission } from "@/server/modules/auth/admin/permissions";
 import { listAuditEvents } from "@/server/modules/audit/service";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminAuditPage() {
+  await requireAdminPermission("audit");
   const events = await listAuditEvents(100);
   return <div className="admin-content">
     <section className="admin-page-heading"><div><p className="section-kicker">Security and accountability</p><h1>Audit trail</h1><p>Chronological records of authentication and operational actions.</p></div><span className="admin-safe-badge">Read-only</span></section>
