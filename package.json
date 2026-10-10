@@ -32,7 +32,8 @@
     "eslint-config-next": "^15.5.3",
     "prisma": "^6.16.2",
     "typescript": "^5.9.2",
-    "dotenv": "^16.6.1"
+    "dotenv": "^16.6.1",
+    "@eslint/eslintrc": "^3.3.7"
   },
   "packageManager": "pnpm@10.6.5"
 }
