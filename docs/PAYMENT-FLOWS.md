@@ -1,39 +1,31 @@
 # Payment Flows and Lifecycles
 
 ## Checkout creation
-1. Authenticate merchant.
-2. Validate merchant status and permission.
-3. Validate order reference, positive amount, supported currency, allowed return URLs, and expiry.
-4. Persist a checkout session with a server-generated identifier.
-5. Return a hosted checkout URL that does not expose provider secrets.
+1. Authenticate the merchant key and verify scope, environment, and merchant eligibility.
+2. Validate amount, currency, order reference, expiry, and success/cancel URLs against policy.
+3. Generate an opaque checkout token and store a hash where practical.
+4. Persist the session and idempotency response in a short transaction.
+5. Return a hosted checkout URL without provider credentials.
 
 ## Payment initiation
-1. Validate session ownership, status, and expiry.
-2. Enforce idempotency.
-3. Persist payment and attempt records.
-4. Call the provider adapter outside a long-running DB transaction.
-5. Persist provider reference and normalized response.
-6. Return only safe next-step information.
-7. Resolve the final status from authoritative provider information.
+1. Load the session and verify ownership, expiry, status, amount, and currency.
+2. Apply idempotency and check for an unresolved active attempt that could create a duplicate charge.
+3. Persist payment and attempt records; commit before network I/O.
+4. Submit to the approved provider with a stable idempotency reference.
+5. Normalize the response and persist the mapped status.
+6. If outcome is ambiguous, record UNKNOWN/REQUIRES_REVIEW and reconcile before retrying.
 
-## Payment states
-Suggested states: CREATED, REQUIRES_ACTION, PROCESSING, SUCCEEDED, FAILED, CANCELED, EXPIRED, REQUIRES_REVIEW. Define allowed transitions centrally. Terminal states cannot be casually reversed. Unknown provider outcomes must be represented as unresolved/reviewable rather than falsely marked failed.
+## Suggested states
+Checkout: OPEN → PROCESSING → COMPLETED, CANCELED, EXPIRED.
+Payment: CREATED → REQUIRES_ACTION / PROCESSING → SUCCEEDED, FAILED, CANCELED, EXPIRED, REQUIRES_REVIEW.
+Attempt: CREATED → SUBMITTED → PROCESSING → SUCCEEDED / FAILED / UNKNOWN.
+Only allow documented transitions. A late failure event must not downgrade a confirmed success; conflicting evidence requires provider lookup or manual review.
+
+## Confirmation and fulfillment
+The return page is navigation only. Confirm success from a verified provider webhook or authenticated provider status query, persisted server-side. Fulfillment notifications must be idempotent and happen only after authoritative success. Never trust query parameters or browser state as payment proof.
 
 ## Refunds
-1. Authenticate and authorize the actor.
-2. Verify the original payment is eligible.
-3. Atomically protect the remaining refundable amount.
-4. Create an idempotent refund operation.
-5. Submit through the provider adapter.
-6. Persist provider reference and response.
-7. Confirm completion using authoritative provider data.
-8. Audit and reconcile the result.
+Verify merchant ownership, original payment status, remaining refundable amount, provider capability, and idempotency. Persist the request before provider I/O; support pending/unknown states. Multiple partial refunds must not exceed the captured amount. Acceptance of a refund request does not mean the refund is complete.
 
-## Failure handling
-- A timeout does not prove that the provider did not execute the operation.
-- Do not blindly retry through a second provider while the original outcome is unknown.
-- Retry only when provider idempotency and operation semantics make it safe.
-- Store correlation IDs and provider references for investigations.
-
-## Fulfillment
-A merchant must query the authoritative payment status or verify a signed server-to-server event before fulfilling an order. A customer redirect alone is never sufficient.
+## Failure and recovery
+Distinguish validation errors, provider rejection, timeout, outage, duplicate request, and uncertain outcome. Retry only documented idempotent operations. Reconcile unresolved attempts and expose safe trace IDs, provider references, timestamps, and controlled resolution actions to operations.
