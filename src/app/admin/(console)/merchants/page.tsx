@@ -1,8 +1,10 @@
+import { requireAdminPermission } from "@/server/modules/auth/admin/permissions";
 import { getMerchantAdminOverview } from "@/server/modules/merchants/service";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminMerchantsPage() {
+  await requireAdminPermission("merchants");
   const data = await getMerchantAdminOverview();
   return <div className="admin-content">
     <section className="admin-page-heading"><div><p className="section-kicker">Merchant operations</p><h1>Merchants</h1><p>Review merchant accounts and their current onboarding status.</p></div></section>
