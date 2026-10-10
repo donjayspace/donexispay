@@ -1,4 +1,5 @@
-import { createHash, randomBytes, scrypt as scryptCallback } from "node:crypto";
+import "dotenv/config";
+import { randomBytes, scrypt as scryptCallback } from "node:crypto";
 import { promisify } from "node:util";
 import { PrismaClient } from "@prisma/client";
 
@@ -26,20 +27,23 @@ async function main() {
   const key = await scrypt(password, salt, 64, { N: 1 << 15, r: 8, p: 1, maxmem: 64 * 1024 * 1024 });
   const passwordHash = `scrypt:${salt.toString("base64url")}:${Buffer.from(key).toString("base64url")}`;
 
-  const admin = await prisma.adminUser.create({
-    data: { email, displayName, passwordHash, role: "SUPER_ADMIN" },
-    select: { id: true, email: true, role: true },
-  });
-  await prisma.auditLog.create({
-    data: {
-      actorType: "SYSTEM",
-      actorId: null,
-      action: "ADMIN_BOOTSTRAP_CREATED",
-      targetType: "ADMIN_USER",
-      targetId: admin.id,
-      outcome: "SUCCESS",
-      metadata: { email: admin.email, role: admin.role },
-    },
+  const admin = await prisma.$transaction(async (tx) => {
+    const created = await tx.adminUser.create({
+      data: { email, displayName, passwordHash, role: "SUPER_ADMIN" },
+      select: { id: true, email: true, role: true },
+    });
+    await tx.auditLog.create({
+      data: {
+        actorType: "SYSTEM",
+        actorId: null,
+        action: "ADMIN_BOOTSTRAP_CREATED",
+        targetType: "ADMIN_USER",
+        targetId: created.id,
+        outcome: "SUCCESS",
+        metadata: { email: created.email, role: created.role },
+      },
+    });
+    return created;
   });
   console.log(`Created first administrator: ${admin.email} (${admin.role}). Remove bootstrap credentials from the environment now.`);
 }
