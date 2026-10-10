@@ -5,12 +5,12 @@ Maintain separate development, staging/test, and production environments with se
 
 ## Build and release
 1. Review code and migration changes.
-2. Run `npm ci`.
-3. Run `npm run db:generate`.
-4. Run `npm run typecheck` and `npm run lint`.
+2. Run `pnpm install --frozen-lockfile`.
+3. Run `pnpm run db:generate`.
+4. Run `pnpm run typecheck` and `pnpm run lint`.
 5. Run automated tests when the suite is added.
-6. Build with `npm run build`.
-7. Apply reviewed migrations using `npm run db:deploy`.
+6. Build with `pnpm run build`.
+7. Apply reviewed migrations using `pnpm run db:deploy`.
 8. Deploy application and worker processes.
 9. Verify health, database connectivity, webhook reachability, and alerts.
 10. Monitor error rates and payment status resolution after release.
