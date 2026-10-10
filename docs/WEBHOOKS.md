@@ -1,30 +1,23 @@
-# Webhook Processing
+# Webhook Processing Guide
 
-## Inbound provider webhooks
-1. Read the raw request body when required by the provider's signature scheme.
-2. Verify signature, timestamp, and replay controls according to provider documentation.
-3. Validate event envelope and provider identity.
-4. Persist event identifier and payload using a provider-scoped unique key.
-5. Acknowledge only according to the provider's documented delivery contract.
-6. Process through an idempotent service/worker.
-7. Validate the event against the current payment/refund record and permitted state transitions.
-8. Record processing result and retryable failures.
+## Inbound provider events
+1. Resolve the configured provider endpoint; do not trust provider identity claimed only in the payload.
+2. Enforce content-type and body-size limits; read raw body when the signature scheme requires it.
+3. Verify signature, timestamp, and replay protections against official provider documentation.
+4. Validate the event envelope.
+5. Persist using a unique key such as `(providerId, providerEventId)`.
+6. Acknowledge only after durable receipt and according to the provider's delivery contract.
+7. Process asynchronously only when a durable queue/outbox exists; otherwise use a safe bounded strategy and document limitations.
+8. Apply state changes idempotently and record a safe processing outcome.
 
-Do not trust an event merely because its JSON says a payment succeeded. Invalid signatures must not change financial state.
-
-## Duplicates and ordering
-Provider retries are expected. Deduplicate by stable provider event ID where available. If the provider has no stable ID, define a documented fallback key. Out-of-order events must not reverse terminal states without an explicit reconciliation process.
+## Duplicates, ordering, and retry
+Events can be duplicated, delayed, retried, or reordered. Duplicate delivery must not duplicate payments, refunds, ledger entries, notifications, or fulfillment. A late event must not regress terminal state. Conflicting evidence requires provider status lookup or reconciliation, not guessing.
 
 ## Outbound merchant webhooks
-- HTTPS destinations only in production.
-- Validate destinations and block loopback, private, link-local, and cloud metadata IP ranges to reduce SSRF risk.
-- Revalidate redirects and DNS resolution where appropriate.
-- Sign each payload with a per-endpoint secret.
-- Include event ID, event type, and timestamp.
-- Persist each delivery attempt.
-- Retry transient failures with exponential backoff and bounded attempts.
-- Support secret rotation and controlled replay.
-- Never include secrets or unnecessary personal data.
+Persist an outbox event in the same transaction as the business state change. Deliver with bounded retries, exponential backoff, jitter, and a retention policy. Sign the exact body with an endpoint-specific secret; include event ID and timestamp. Support safe secret rotation and a documented verification example.
 
-## Reliability
-Use a durable queue or transactional outbox for critical events. An in-memory task after returning an HTTP response is not a durable delivery mechanism.
+## Delivery safety
+Use HTTPS, strict timeouts, response-size limits, destination validation, and SSRF protections. Do not follow arbitrary redirects to private/internal addresses. Protect against metadata endpoints and re-check destination resolution where needed.
+
+## Operations and tests
+Monitor signature failures, duplicate rates, backlog, processing latency, dead letters, and repeated delivery failures. Manual replay must be permissioned and audited and retain the original event identity. Test valid/invalid signatures, stale timestamps, malformed/oversize bodies, concurrent duplicates, out-of-order events, secret rotation, retry, and SSRF attempts.
