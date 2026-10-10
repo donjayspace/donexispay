@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import type { AuthenticatedAdmin } from "@/server/modules/auth/admin";
+import { AdminNavigation } from "@/components/layouts/admin-navigation";
 import { canAdminAccess, type AdminPermission } from "@/server/modules/auth/admin/permissions";
 
 type Props = { children: ReactNode; admin: AuthenticatedAdmin };
@@ -29,9 +30,7 @@ export function AdminShell({ children, admin }: Props) {
       <aside className="admin-sidebar">
         <Link className="brand-lockup" href="/admin"><span className="brand-mark" aria-hidden="true">D</span><span>donexis<span className="brand-accent">pay</span></span></Link>
         <p className="admin-nav-label">PLATFORM CONTROL</p>
-        <nav aria-label="Administrator navigation" className="admin-nav">
-          {links.filter((link) => canAdminAccess(admin.role, link.permission)).map((link) => <Link key={link.href} href={link.href} className="admin-nav-link"><span aria-hidden="true">{link.icon}</span>{link.label}</Link>)}
-        </nav>
+        <AdminNavigation links={links.filter((link) => canAdminAccess(admin.role, link.permission))} />
         <div className="admin-sidebar-bottom"><span className="admin-avatar">{admin.displayName.slice(0, 1).toUpperCase()}</span><span><strong>{admin.displayName}</strong><small>{admin.role.replaceAll("_", " ")}</small></span></div>
       </aside>
       <main className="admin-main">
