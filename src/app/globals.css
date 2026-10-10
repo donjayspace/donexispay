@@ -456,3 +456,39 @@ footer { color: var(--muted); font-size: .9rem; }
   outline: 2px solid #315efb;
   outline-offset: 2px;
 }
+
+/* Provider return page: intentionally neutral until the server confirms the payment state. */
+.checkout-return-card {
+  width: min(100% - 36px, 650px);
+  margin: clamp(28px, 7vh, 76px) auto;
+  padding: clamp(24px, 5vw, 44px);
+  border: 1px solid #e5e9f3;
+  border-radius: 24px;
+  background: #fff;
+  box-shadow: 0 24px 70px rgba(22, 34, 71, .08);
+}
+.checkout-return-icon {
+  display: grid;
+  width: 52px;
+  height: 52px;
+  place-items: center;
+  margin-bottom: 22px;
+  border-radius: 16px;
+  background: #eef1ff;
+  color: #3456e8;
+  font-size: 1.5rem;
+}
+.checkout-return-card h1 {
+  max-width: 520px;
+  margin: 10px 0 12px;
+  color: #172033;
+  font-size: clamp(2rem, 5vw, 2.8rem);
+  line-height: 1.12;
+  letter-spacing: -.045em;
+}
+.checkout-return-card > p:not(.section-kicker) {
+  color: #626d80;
+  line-height: 1.75;
+}
+.checkout-return-card .checkout-notice { margin: 24px 0; }
+.checkout-return-card > .button { width: 100%; justify-content: center; }
