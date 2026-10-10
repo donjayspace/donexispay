@@ -30,7 +30,7 @@ export default function HomePage() {
           <a href="#platform">Platform</a>
           <a href="#security">Security</a>
           <Link href="/login">Sign in</Link>
-          <Link className="button button-primary button-small" href="/dashboard">Open dashboard <span aria-hidden="true">↗</span></Link>
+          <Link className="button button-primary button-small" href="/login">Sign in to dashboard <span aria-hidden="true">↗</span></Link>
         </nav>
         <details className="mobile-nav">
           <summary aria-label="Open navigation"><span></span><span></span><span></span></summary>
@@ -38,7 +38,7 @@ export default function HomePage() {
             <a href="#platform">Platform</a>
             <a href="#security">Security</a>
             <Link href="/login">Sign in</Link>
-            <Link href="/dashboard">Dashboard preview</Link>
+            <Link href="/login">Sign in to dashboard</Link>
           </nav>
         </details>
       </header>
@@ -51,7 +51,7 @@ export default function HomePage() {
             A unified checkout and payment operations platform designed to help businesses connect approved providers and understand every payment journey.
           </p>
           <div className="hero-actions">
-            <Link className="button button-primary" href="/dashboard">Explore dashboard <span aria-hidden="true">→</span></Link>
+            <Link className="button button-primary" href="/register">Get started <span aria-hidden="true">→</span></Link>
             <a className="button button-secondary" href="#platform">Discover the platform</a>
           </div>
           <div className="hero-proof"><span className="proof-check">✓</span> Built around clear states, traceable events, and provider flexibility.</div>
@@ -88,7 +88,7 @@ export default function HomePage() {
         <div className="capability-grid">{capabilities.map((item) => <article className="capability-card" key={item.number}><span className="capability-number">{item.number}</span><h3>{item.title}</h3><p>{item.description}</p><span className="capability-arrow" aria-hidden="true">↗</span></article>)}</div>
       </section>
 
-      <section className="security-band page-width" id="security"><div className="security-symbol" aria-hidden="true">⌁</div><div><p className="section-kicker">Security is a foundation</p><h2>Built with care for every critical detail.</h2><p>Merchant-scoped access, protected secrets, idempotent operations, and verified event processing are part of the platform&apos;s design.</p></div><Link className="button button-secondary" href="/dashboard">View workspace <span aria-hidden="true">→</span></Link></section>
+      <section className="security-band page-width" id="security"><div className="security-symbol" aria-hidden="true">⌁</div><div><p className="section-kicker">Security is a foundation</p><h2>Built with care for every critical detail.</h2><p>Merchant-scoped access, protected secrets, idempotent operations, and verified event processing are part of the platform&apos;s design.</p></div><Link className="button button-secondary" href="/login">View workspace <span aria-hidden="true">→</span></Link></section>
 
       <footer className="marketing-footer page-width"><Link className="brand-lockup" href="/"><span className="brand-mark" aria-hidden="true">D</span><span>donexis<span className="brand-accent">pay</span></span></Link><p>Payment operations, with clarity.</p><small>DonexisPay is a payment orchestration project, not a bank or card network. Live processing depends on approved providers and applicable legal requirements.</small><span className="footer-copyright">© {new Date().getFullYear()} DonexisPay</span></footer>
     </main>
