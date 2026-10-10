@@ -1,8 +1,10 @@
+import { requireAdminPermission } from "@/server/modules/auth/admin/permissions";
 import { getProviderEventAdminOverview } from "@/server/modules/webhooks/service";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminEventsPage() {
+  await requireAdminPermission("events");
   const data = await getProviderEventAdminOverview();
   return <div className="admin-content">
     <section className="admin-page-heading"><div><p className="section-kicker">Webhook operations</p><h1>Provider events</h1><p>Monitor the delivery and processing lifecycle of provider notifications.</p></div></section>
