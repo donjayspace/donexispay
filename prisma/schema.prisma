@@ -136,6 +136,7 @@ model Payment {
   status            PaymentStatus @default(CREATED)
   providerId        String?
   providerPaymentId String?
+  providerRedirectUrl String?
   failureCode       String?
   failureMessage    String?
   createdAt         DateTime      @default(now())
