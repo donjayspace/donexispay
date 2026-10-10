@@ -35,3 +35,14 @@ CREATE INDEX "AdminSession_revokedAt_idx" ON "AdminSession"("revokedAt");
 
 ALTER TABLE "AdminSession" ADD CONSTRAINT "AdminSession_adminId_fkey"
   FOREIGN KEY ("adminId") REFERENCES "AdminUser"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+CREATE TABLE "AdminLoginAttempt" (
+  "emailKey" TEXT NOT NULL,
+  "attempts" INTEGER NOT NULL DEFAULT 0,
+  "windowStartedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "blockedUntil" TIMESTAMP(3),
+  "updatedAt" TIMESTAMP(3) NOT NULL,
+  CONSTRAINT "AdminLoginAttempt_pkey" PRIMARY KEY ("emailKey")
+);
+CREATE INDEX "AdminLoginAttempt_blockedUntil_idx" ON "AdminLoginAttempt"("blockedUntil");
+CREATE INDEX "AdminLoginAttempt_updatedAt_idx" ON "AdminLoginAttempt"("updatedAt");
