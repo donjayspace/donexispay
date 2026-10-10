@@ -1,6 +1,25 @@
 import Link from "next/link";
 
-export default function LoginPage() {
+type LoginPageProps = {
+  searchParams: Promise<{ error?: string }>;
+};
+
+const errorMessages: Record<string, string> = {
+  provider_unavailable: "That sign-in provider is not configured yet. Add its OAuth credentials to the server environment.",
+  oauth_canceled: "Sign-in was canceled. You can try again whenever you're ready.",
+  oauth_state_invalid: "This sign-in request expired or could not be verified. Please start again.",
+  account_conflict: "An account already uses this email with another sign-in method. Sign in with the provider you originally used; accounts are not automatically linked.",
+  oauth_failed: "We couldn't complete sign-in. Please try again.",
+};
+
+function ProviderButton({ provider, label, icon }: { provider: "google" | "github"; label: string; icon: string }) {
+  return <a className="oauth-button" href={`/api/auth/${provider}`}><span className="oauth-provider-icon" aria-hidden="true">{icon}</span><span>{label}</span><span className="oauth-button-arrow" aria-hidden="true">→</span></a>;
+}
+
+export default async function LoginPage({ searchParams }: LoginPageProps) {
+  const { error } = await searchParams;
+  const message = error ? errorMessages[error] : undefined;
+
   return (
     <main className="auth-page">
       <section className="auth-story">
@@ -10,14 +29,18 @@ export default function LoginPage() {
       </section>
       <section className="auth-form-wrap">
         <div className="auth-form">
-          <p className="section-kicker">Welcome back</p><h2>Sign in to DonexisPay</h2><p>Enter your work email to continue to your workspace.</p>
-          <form action="/dashboard" method="get">
-            <label className="form-label" htmlFor="email">Work email</label><input className="form-field" id="email" name="email" type="email" autoComplete="email" placeholder="you@company.com" required />
-            <label className="form-label" htmlFor="password">Password</label><input className="form-field" id="password" name="password" type="password" autoComplete="current-password" placeholder="Enter your password" required />
-            <button className="button button-primary form-submit" type="button" aria-describedby="auth-notice">Continue securely <span aria-hidden="true">→</span></button>
-          </form>
-          <div className="notice" id="auth-notice"><strong>Authentication UI preview.</strong> Sign-in is not connected yet, and this form does not authenticate or submit credentials. Do not enter a real password.</div>
-          <div className="form-foot">Need to explore first? <Link href="/dashboard" style={{ color: "#405ce5", fontWeight: 700 }}>Open the dashboard preview</Link></div>
+          <p className="section-kicker">Welcome back</p>
+          <h2>Sign in to DonexisPay</h2>
+          <p>Continue securely using a verified account with one of our supported identity providers.</p>
+          {message ? <div className="auth-error" role="alert">{message}</div> : null}
+          <div className="oauth-provider-buttons">
+            <ProviderButton provider="google" label="Continue with Google" icon="G" />
+            <ProviderButton provider="github" label="Continue with GitHub" icon="GH" />
+          </div>
+          <div className="auth-divider"><span>Secure account access</span></div>
+          <p className="auth-legal">By continuing, you confirm you are authorized to use this workspace. Your provider verifies your identity; DonexisPay never receives your provider password.</p>
+          <div className="form-foot">New to DonexisPay? <Link href="/register" style={{ color: "#405ce5", fontWeight: 700 }}>Create an account</Link></div>
+          <div className="form-foot"><Link href="/" style={{ color: "#667085", fontWeight: 600 }}>← Back to homepage</Link></div>
         </div>
       </section>
     </main>
