@@ -3,7 +3,6 @@ import { z } from "zod";
 import { getCurrentUser } from "@/server/modules/auth";
 import { createMerchantWorkspace, listUserMerchantWorkspaces } from "@/server/modules/onboarding/service";
 import { errorResponse } from "@/server/infrastructure/security/api-response";
-import { AppError } from "@/server/shared/errors/app-error";
 
 export const dynamic = "force-dynamic";
 const schema = z.object({
