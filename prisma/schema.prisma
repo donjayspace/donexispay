@@ -70,6 +70,15 @@ model Merchant {
   checkoutSessions CheckoutSession[]
   payments         Payment[]
   idempotencyKeys  IdempotencyRecord[]
+  customers        Customer[]
+  members          MerchantMember[]
+  refunds          Refund[]
+  paymentLinks     PaymentLink[]
+  billingInvoices  BillingInvoice[]
+  settlements      Settlement[]
+  pricingRules     PricingRule[]
+  notifications    Notification[]
+  webhookEndpoints WebhookEndpoint[]
 
   @@index([status, createdAt])
 }
@@ -134,6 +143,8 @@ model Payment {
   merchant        Merchant         @relation(fields: [merchantId], references: [id], onDelete: Restrict)
   checkoutSession CheckoutSession? @relation(fields: [checkoutSessionId], references: [id], onDelete: Restrict)
   attempts        PaymentAttempt[]
+  refunds         Refund[]
+  riskReview      RiskReview?
 
   @@index([merchantId, status, createdAt])
   @@index([providerId, providerPaymentId])
@@ -228,6 +239,8 @@ model User {
 
   oauthAccounts OAuthAccount[]
   sessions      AuthSession[]
+  merchantMemberships MerchantMember[]
+  notifications Notification[]
 
   @@index([role, createdAt])
   @@index([disabledAt])
@@ -282,6 +295,7 @@ model AdminUser {
   updatedAt      DateTime  @updatedAt
 
   sessions AdminSession[]
+  riskReviews RiskReview[]
 
   @@index([role, createdAt])
   @@index([disabledAt])
@@ -311,4 +325,325 @@ model AdminLoginAttempt {
 
   @@index([blockedUntil])
   @@index([updatedAt])
+}
+
+enum RefundStatus {
+  REQUESTED
+  PENDING
+  SUCCEEDED
+  FAILED
+  CANCELED
+}
+
+enum PaymentLinkStatus {
+  ACTIVE
+  INACTIVE
+  EXPIRED
+}
+
+enum BillingInvoiceStatus {
+  DRAFT
+  OPEN
+  PAID
+  VOID
+  OVERDUE
+}
+
+enum SettlementStatus {
+  PENDING
+  PROCESSING
+  SETTLED
+  FAILED
+}
+
+enum ReconciliationStatus {
+  QUEUED
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+enum RiskReviewStatus {
+  OPEN
+  APPROVED
+  DECLINED
+  NEEDS_INFORMATION
+}
+
+enum MerchantMemberRole {
+  OWNER
+  ADMIN
+  DEVELOPER
+  VIEWER
+}
+
+/// Customer identity belongs to a merchant and is never treated as an admin account.
+model Customer {
+  id          String   @id @default(cuid())
+  merchantId  String
+  email       String?
+  name        String?
+  phone       String?
+  externalId  String?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  merchant Merchant @relation(fields: [merchantId], references: [id], onDelete: Restrict)
+
+  @@unique([merchantId, externalId])
+  @@index([merchantId, email])
+  @@index([merchantId, createdAt])
+}
+
+/// Membership is the explicit ownership boundary between users and merchant workspaces.
+model MerchantMember {
+  id         String             @id @default(cuid())
+  merchantId String
+  userId     String
+  role       MerchantMemberRole @default(VIEWER)
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
+
+  merchant Merchant @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([merchantId, userId])
+  @@index([userId, role])
+}
+
+/// Refunds are first-class records; provider confirmation, not a UI click, marks success.
+model Refund {
+  id               String       @id @default(cuid())
+  merchantId       String
+  paymentId        String
+  amountMinor      BigInt
+  currency         String       @db.VarChar(3)
+  status           RefundStatus @default(REQUESTED)
+  reason           String?
+  providerRefundId String?
+  idempotencyKey   String
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  completedAt      DateTime?
+
+  merchant Merchant @relation(fields: [merchantId], references: [id], onDelete: Restrict)
+  payment  Payment  @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+
+  @@unique([merchantId, idempotencyKey])
+  @@index([merchantId, status, createdAt])
+  @@index([paymentId, createdAt])
+  @@index([providerRefundId])
+}
+
+/// Reusable merchant checkout URL. Secrets/tokens must be stored hashed, not in clear text.
+model PaymentLink {
+  id                String           @id @default(cuid())
+  merchantId        String
+  name              String
+  tokenHash         String           @unique
+  amountMinor       BigInt
+  currency          String           @db.VarChar(3)
+  description       String?
+  status            PaymentLinkStatus @default(ACTIVE)
+  expiresAt         DateTime?
+  successUrl        String?
+  cancelUrl         String?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  merchant        Merchant         @relation(fields: [merchantId], references: [id], onDelete: Restrict)
+  checkoutSessions CheckoutSession[]
+
+  @@index([merchantId, status, createdAt])
+  @@index([status, expiresAt])
+}
+
+/// Internal platform billing record; not a merchant payment and not a payment-provider transaction.
+model BillingInvoice {
+  id          String              @id @default(cuid())
+  merchantId  String
+  invoiceNumber String            @unique
+  amountMinor BigInt
+  currency    String              @db.VarChar(3)
+  status      BillingInvoiceStatus @default(DRAFT)
+  description String?
+  dueAt       DateTime?
+  paidAt      DateTime?
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  merchant Merchant @relation(fields: [merchantId], references: [id], onDelete: Restrict)
+
+  @@index([merchantId, status, createdAt])
+  @@index([status, dueAt])
+}
+
+/// Provider settlement statement totals imported from a provider's settlement report.
+model Settlement {
+  id                String           @id @default(cuid())
+  merchantId        String?
+  providerId        String
+  providerReference String
+  currency          String           @db.VarChar(3)
+  grossMinor        BigInt
+  feeMinor          BigInt           @default(0)
+  netMinor          BigInt
+  status            SettlementStatus @default(PENDING)
+  settlementDate    DateTime?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  merchant Merchant? @relation(fields: [merchantId], references: [id], onDelete: SetNull)
+
+  @@unique([providerId, providerReference])
+  @@index([providerId, status, createdAt])
+  @@index([merchantId, settlementDate])
+}
+
+/// A reconciliation run is an auditable snapshot of a provider statement comparison.
+model ReconciliationRun {
+  id             String              @id @default(cuid())
+  providerId     String
+  status         ReconciliationStatus @default(QUEUED)
+  startedAt      DateTime?
+  completedAt    DateTime?
+  totalRecords   Int                 @default(0)
+  matchedRecords Int                 @default(0)
+  exceptionCount Int                 @default(0)
+  summary        Json?
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  items ReconciliationItem[]
+
+  @@index([providerId, status, createdAt])
+}
+
+model ReconciliationItem {
+  id                 String   @id @default(cuid())
+  runId              String
+  externalReference  String?
+  internalReference  String?
+  currency           String   @db.VarChar(3)
+  externalAmountMinor BigInt
+  internalAmountMinor BigInt?
+  matched            Boolean  @default(false)
+  exceptionCode      String?
+  createdAt          DateTime @default(now())
+
+  run ReconciliationRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  @@index([runId, matched])
+  @@index([externalReference])
+}
+
+/// Pricing rules are versionable configuration; calculation is performed by pricing services.
+model PricingRule {
+  id             String   @id @default(cuid())
+  merchantId     String?
+  name           String
+  countryCode    String?  @db.VarChar(2)
+  currency       String?  @db.VarChar(3)
+  paymentMethod  String?
+  fixedFeeMinor  BigInt   @default(0)
+  percentageBps  Int      @default(0)
+  active         Boolean  @default(false)
+  effectiveFrom  DateTime @default(now())
+  effectiveUntil DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  merchant Merchant? @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+
+  @@index([active, effectiveFrom, effectiveUntil])
+  @@index([merchantId, currency, countryCode])
+}
+
+/// A risk review is a decision record, not an automated assertion that fraud has occurred.
+model RiskReview {
+  id                String          @id @default(cuid())
+  paymentId         String          @unique
+  status            RiskReviewStatus @default(OPEN)
+  score             Int?
+  reasonCode        String?
+  notes             String?
+  reviewedByAdminId String?
+  reviewedAt        DateTime?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  payment    Payment   @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  reviewedBy AdminUser? @relation(fields: [reviewedByAdminId], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+  @@index([reviewedByAdminId, reviewedAt])
+}
+
+/// Notifications are internal messages; delivery integrations are owned by notifications services.
+model Notification {
+  id         String   @id @default(cuid())
+  userId     String?
+  merchantId String?
+  type       String   @db.VarChar(64)
+  title      String
+  message    String
+  readAt     DateTime?
+  createdAt  DateTime @default(now())
+
+  user     User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  merchant Merchant? @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt, createdAt])
+  @@index([merchantId, createdAt])
+}
+
+/// Provider configuration contains non-secret metadata only; credentials remain in secret storage.
+model ProviderConfiguration {
+  id           String           @id @default(cuid())
+  providerId   String
+  displayName  String
+  environment  ApiKeyEnvironment
+  enabled      Boolean          @default(false)
+  capabilities Json?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  @@unique([providerId, environment])
+  @@index([enabled, environment])
+}
+
+/// Merchant webhook destinations are separate from provider-to-platform webhook ingress.
+model WebhookEndpoint {
+  id          String   @id @default(cuid())
+  merchantId  String
+  url         String
+  secretHash  String
+  enabled     Boolean  @default(true)
+  eventTypes  String[] @default([])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  merchant   Merchant          @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  deliveries WebhookDelivery[]
+
+  @@index([merchantId, enabled])
+}
+
+model WebhookDelivery {
+  id            String   @id @default(cuid())
+  endpointId    String
+  eventId       String
+  attempt       Int      @default(0)
+  responseCode  Int?
+  status        String   @default("PENDING") @db.VarChar(32)
+  nextAttemptAt DateTime?
+  deliveredAt   DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  endpoint WebhookEndpoint @relation(fields: [endpointId], references: [id], onDelete: Cascade)
+
+  @@unique([endpointId, eventId])
+  @@index([status, nextAttemptAt])
 }
