@@ -1,2 +1,2 @@
-export { getCurrentUser, requireAdmin, requireUser } from "./session";
+export { getCurrentUser, requireUser } from "./session";
 export type { AuthenticatedUser, OAuthProvider } from "./types";
