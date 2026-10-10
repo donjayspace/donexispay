@@ -1,85 +1,76 @@
-# DonexisPay Route Map
+# DonexisPay Route Map and Wiring Guide
 
-This document is the source-of-truth map between browser URLs, App Router page files, and the shared navigation components. Route groups such as `(marketing)`, `(auth)`, and `(dashboard)` organize code but are not included in public URLs.
+Route groups in parentheses are organizational only and do not appear in public URLs. This map reflects the current App Router files; verify against the repository tree when routes change.
 
-## Public pages
-
-| URL | App Router file | Purpose |
+## Public and customer identity routes
+| URL | File | Access expectation |
 |---|---|---|
-| `/` | `src/app/(marketing)/page.tsx` | Marketing homepage and entry links |
-| `/login` | `src/app/(auth)/login/page.tsx` | Customer OAuth sign-in |
-| `/register` | `src/app/(auth)/register/page.tsx` | Customer OAuth registration |
-| `/checkout/[sessionId]` | `src/app/checkout/[sessionId]/page.tsx` | Hosted checkout session, resolved by its opaque checkout token |
-| `/checkout/return` | `src/app/checkout/return/page.tsx` | Neutral provider-return landing page; never treats a browser redirect as payment proof |
-| `/checkout-link/[token]` | `src/app/checkout-link/[token]/page.tsx` | Resolves a public payment-link token into a short-lived checkout session |
-| `/admin/login` | `src/app/admin/login/page.tsx` | Separate administrator credential login |
+| `/` | `src/app/(marketing)/page.tsx` | Public |
+| `/login` | `src/app/(auth)/login/page.tsx` | Public customer sign-in |
+| `/register` | `src/app/(auth)/register/page.tsx` | Public customer registration |
+| `/checkout/[sessionId]` | `src/app/checkout/[sessionId]/page.tsx` | Opaque checkout session; validate token and expiry server-side |
+| `/checkout/return` | `src/app/checkout/return/page.tsx` | Neutral provider-return page; never treats redirect as proof |
+| `/checkout-link/[token]` | `src/app/checkout-link/[token]/page.tsx` | Public payment-link token; validate and expire |
+| `/admin/login` | `src/app/admin/login/page.tsx` | Separate administrator login |
 
-## Customer workspace pages
+## Merchant workspace
+The workspace layout is `src/app/(dashboard)/layout.tsx`. It must require a valid customer session. OAuth identities never grant admin access. Each page and every data mutation must also verify active merchant membership and the required permission.
 
-The route group `src/app/(dashboard)/` is protected by `src/app/(dashboard)/layout.tsx`, which calls `requireUser()`. Customer OAuth identities do not grant administrator access.
+| URL | File |
+|---|---|
+| `/dashboard` | `src/app/(dashboard)/dashboard/page.tsx` |
+| `/dashboard/onboarding` | `src/app/(dashboard)/dashboard/onboarding/page.tsx` |
+| `/dashboard/transactions` | `src/app/(dashboard)/dashboard/transactions/page.tsx` |
+| `/dashboard/checkout` | `src/app/(dashboard)/dashboard/checkout/page.tsx` |
+| `/dashboard/payment-links` | `src/app/(dashboard)/dashboard/payment-links/page.tsx` |
+| `/dashboard/customers` | `src/app/(dashboard)/dashboard/customers/page.tsx` |
+| `/dashboard/refunds` | `src/app/(dashboard)/dashboard/refunds/page.tsx` |
+| `/dashboard/developers` | `src/app/(dashboard)/dashboard/developers/page.tsx` |
+| `/dashboard/settings` | `src/app/(dashboard)/dashboard/settings/page.tsx` |
 
-| URL | Page file | Navigation label |
+Shared navigation is implemented in `src/components/layouts/dashboard-shell.tsx`. Some dashboard screens may still be presentation/previews; verify service wiring before describing an action as production-ready.
+
+## Administrator console
+Console pages live under `src/app/admin/(console)/`; the shared layout is `src/app/admin/(console)/layout.tsx`. Navigation and active highlighting use `src/components/layouts/admin-shell.tsx` and `src/components/layouts/admin-navigation.tsx`.
+
+| URL | Page file | Permission concept |
 |---|---|---|
-| `/dashboard` | `src/app/(dashboard)/dashboard/page.tsx` | Overview |
-| `/dashboard/onboarding` | `src/app/(dashboard)/dashboard/onboarding/page.tsx` | Getting started |
-| `/dashboard/transactions` | `src/app/(dashboard)/dashboard/transactions/page.tsx` | Transactions |
-| `/dashboard/checkout` | `src/app/(dashboard)/dashboard/checkout/page.tsx` | Checkout |
-| `/dashboard/payment-links` | `src/app/(dashboard)/dashboard/payment-links/page.tsx` | Payment links |
-| `/dashboard/customers` | `src/app/(dashboard)/dashboard/customers/page.tsx` | Customers |
-| `/dashboard/refunds` | `src/app/(dashboard)/dashboard/refunds/page.tsx` | Refunds |
-| `/dashboard/developers` | `src/app/(dashboard)/dashboard/developers/page.tsx` | Developers |
-| `/dashboard/settings` | `src/app/(dashboard)/dashboard/settings/page.tsx` | Settings |
+| `/admin` | `src/app/admin/(console)/page.tsx` | Overview |
+| `/admin/merchants` | `src/app/admin/(console)/merchants/page.tsx` | Merchant operations |
+| `/admin/payments` | `src/app/admin/(console)/payments/page.tsx` | Payment operations |
+| `/admin/events` | `src/app/admin/(console)/events/page.tsx` | Provider event operations |
+| `/admin/refunds` | `src/app/admin/(console)/refunds/page.tsx` | Refund operations |
+| `/admin/settlements` | `src/app/admin/(console)/settlements/page.tsx` | Settlement operations |
+| `/admin/reconciliation` | `src/app/admin/(console)/reconciliation/page.tsx` | Reconciliation |
+| `/admin/risk` | `src/app/admin/(console)/risk/page.tsx` | Risk review |
+| `/admin/billing` | `src/app/admin/(console)/billing/page.tsx` | Platform billing |
+| `/admin/providers` | `src/app/admin/(console)/providers/page.tsx` | Provider configuration |
+| `/admin/users` | `src/app/admin/(console)/users/page.tsx` | Customer user support |
+| `/admin/administrators` | `src/app/admin/(console)/administrators/page.tsx` | Privileged administrator management |
+| `/admin/audit` | `src/app/admin/(console)/audit/page.tsx` | Audit trail |
+| `/admin/settings` | `src/app/admin/(console)/settings/page.tsx` | System settings |
 
-Shared navigation is implemented in `src/components/layouts/dashboard-shell.tsx`. The workspace pages use `src/components/layouts/workspace-placeholder.tsx` for consistent responsive layout where the relevant dashboard actions are not yet enabled.
+**Authorization requirement:** verify actual server-side guards before release. Every privileged page, API, Server Action, and service mutation must call the appropriate permission check. Navigation filtering is only a usability feature and never an authorization boundary.
 
-## Administrator console pages
-
-Every route below is wrapped by `src/app/admin/(console)/layout.tsx`, which calls `requireAdmin()`. Each page additionally calls `requireAdminPermission()`. Navigation visibility is filtered on the server and the current URL is highlighted by `src/components/layouts/admin-navigation.tsx`.
-
-| URL | Page file | Required permission |
+## API route files
+| URL | Route file | Method(s) |
 |---|---|---|
-| `/admin` | `src/app/admin/(console)/page.tsx` | `overview` |
-| `/admin/merchants` | `src/app/admin/(console)/merchants/page.tsx` | `merchants` |
-| `/admin/payments` | `src/app/admin/(console)/payments/page.tsx` | `payments` |
-| `/admin/events` | `src/app/admin/(console)/events/page.tsx` | `events` |
-| `/admin/refunds` | `src/app/admin/(console)/refunds/page.tsx` | `refunds` |
-| `/admin/settlements` | `src/app/admin/(console)/settlements/page.tsx` | `settlements` |
-| `/admin/reconciliation` | `src/app/admin/(console)/reconciliation/page.tsx` | `reconciliation` |
-| `/admin/risk` | `src/app/admin/(console)/risk/page.tsx` | `risk` |
-| `/admin/billing` | `src/app/admin/(console)/billing/page.tsx` | `billing` |
-| `/admin/providers` | `src/app/admin/(console)/providers/page.tsx` | `providers` |
-| `/admin/users` | `src/app/admin/(console)/users/page.tsx` | `users` |
-| `/admin/administrators` | `src/app/admin/(console)/administrators/page.tsx` | `administrators` |
-| `/admin/audit` | `src/app/admin/(console)/audit/page.tsx` | `audit` |
-| `/admin/settings` | `src/app/admin/(console)/settings/page.tsx` | `settings` |
+| `/api/health` | `src/app/api/health/route.ts` | GET |
+| `/api/auth/[provider]` | `src/app/api/auth/[provider]/route.ts` | GET |
+| `/api/auth/[provider]/callback` | `src/app/api/auth/[provider]/callback/route.ts` | GET |
+| `/api/auth/logout` | `src/app/api/auth/logout/route.ts` | POST |
+| `/api/admin/auth/login` | `src/app/api/admin/auth/login/route.ts` | POST |
+| `/api/admin/auth/logout` | `src/app/api/admin/auth/logout/route.ts` | POST |
+| `/api/onboarding/merchant` | `src/app/api/onboarding/merchant/route.ts` | GET, POST |
+| `/api/v1/checkout-sessions` | `src/app/api/v1/checkout-sessions/route.ts` | POST |
+| `/api/v1/payments` | `src/app/api/v1/payments/route.ts` | POST |
+| `/api/v1/payments/[paymentId]` | `src/app/api/v1/payments/[paymentId]/route.ts` | GET |
+| `/api/v1/payment-links` | `src/app/api/v1/payment-links/route.ts` | GET, POST |
+| `/api/v1/customers` | `src/app/api/v1/customers/route.ts` | GET, POST |
+| `/api/v1/refunds` | `src/app/api/v1/refunds/route.ts` | GET, POST |
+| `/api/webhooks/[provider]` | `src/app/api/webhooks/[provider]/route.ts` | POST |
 
-The administrator shell lives in `src/components/layouts/admin-shell.tsx`. Do not add a link to a privileged page without adding its permission and server-side guard.
+## Route wiring checklist
+When adding a page or endpoint, update the page/handler, its server-side auth and tenant checks, module service, validation schema, loading/error/empty states, navigation and active state, tests, and this route map together.
 
-## API routes
-
-| URL | Route file | Method(s) | Purpose |
-|---|---|---|---|
-| `/api/health` | `src/app/api/health/route.ts` | GET | Process health only; not a provider or database readiness check |
-| `/api/auth/[provider]` | `src/app/api/auth/[provider]/route.ts` | GET | Begin customer OAuth |
-| `/api/auth/[provider]/callback` | `src/app/api/auth/[provider]/callback/route.ts` | GET | Verify OAuth callback and establish customer session |
-| `/api/auth/logout` | `src/app/api/auth/logout/route.ts` | POST | Revoke customer session |
-| `/api/admin/auth/login` | `src/app/api/admin/auth/login/route.ts` | POST | Separate administrator sign-in |
-| `/api/admin/auth/logout` | `src/app/api/admin/auth/logout/route.ts` | POST | Revoke administrator session |
-| `/api/onboarding/merchant` | `src/app/api/onboarding/merchant/route.ts` | GET, POST | List/create merchant workspaces for the signed-in customer |
-| `/api/v1/checkout-sessions` | `src/app/api/v1/checkout-sessions/route.ts` | POST | Create an idempotent hosted checkout session using merchant API credentials |
-| `/api/v1/payments` | `src/app/api/v1/payments/route.ts` | POST | Start a provider payment attempt |
-| `/api/v1/payments/[paymentId]` | `src/app/api/v1/payments/[paymentId]/route.ts` | GET | Read a payment scoped to the authenticated merchant |
-| `/api/v1/payment-links` | `src/app/api/v1/payment-links/route.ts` | GET, POST | List/create merchant payment links |
-| `/api/v1/customers` | `src/app/api/v1/customers/route.ts` | GET, POST | List/create merchant-scoped customer records |
-| `/api/v1/refunds` | `src/app/api/v1/refunds/route.ts` | GET, POST | List/request merchant-scoped refunds |
-| `/api/webhooks/[provider]` | `src/app/api/webhooks/[provider]/route.ts` | POST | Accept events only from a registered signature-verifying provider adapter |
-
-## Navigation and routing rules
-
-1. Use `next/link` for internal browser navigation. Keep provider callback and API endpoints as normal HTTP endpoints.
-2. A route group name in parentheses is omitted from the URL.
-3. Do not create multiple dynamic segment names at the same directory level (for example, both `[token]` and `[sessionId]` under `src/app/checkout/`). Next.js treats those as a conflicting route. Use one dynamic segment and name the parameter according to its meaning.
-4. Keep the provider-return page neutral. A return URL is not proof of success; only verified provider state may update payment status.
-5. A hidden navigation link is not authorization. Every private page and API handler must enforce authentication, merchant scoping, and/or the required administrator permission on the server.
-6. When adding a page, update the relevant shell navigation, active-state behavior, this route map, and route-level authorization together.
-7. Run `pnpm typecheck`, `pnpm lint`, and `pnpm build` after route changes.
+Use `next/link` for internal browser navigation. API endpoints remain HTTP requests. Do not create sibling dynamic directories with different parameter names at the same level (for example `[token]` and `[sessionId]`); Next.js treats them as conflicting routes. Keep provider return pages neutral: only verified provider events or authenticated provider status checks can confirm payment.
