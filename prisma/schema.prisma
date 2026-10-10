@@ -1,0 +1,183 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum MerchantStatus {
+  PENDING
+  UNDER_REVIEW
+  ACTIVE
+  RESTRICTED
+  SUSPENDED
+  CLOSED
+}
+
+enum CheckoutStatus {
+  OPEN
+  PROCESSING
+  COMPLETED
+  CANCELED
+  EXPIRED
+}
+
+enum PaymentStatus {
+  CREATED
+  REQUIRES_ACTION
+  PROCESSING
+  SUCCEEDED
+  FAILED
+  CANCELED
+  EXPIRED
+  REQUIRES_REVIEW
+}
+
+enum PaymentAttemptStatus {
+  CREATED
+  SUBMITTED
+  PROCESSING
+  SUCCEEDED
+  FAILED
+  UNKNOWN
+}
+
+enum ProviderEventStatus {
+  RECEIVED
+  PROCESSING
+  PROCESSED
+  FAILED
+  IGNORED
+}
+
+model Merchant {
+  id          String         @id @default(cuid())
+  name        String
+  slug        String         @unique
+  status      MerchantStatus @default(PENDING)
+  countryCode String?        @db.VarChar(2)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  checkoutSessions CheckoutSession[]
+  payments         Payment[]
+  idempotencyKeys  IdempotencyRecord[]
+
+  @@index([status, createdAt])
+}
+
+model CheckoutSession {
+  id                String         @id @default(cuid())
+  merchantId        String
+  orderReference    String
+  amountMinor       BigInt
+  currency          String         @db.VarChar(3)
+  description       String?
+  status            CheckoutStatus @default(OPEN)
+  expiresAt         DateTime
+  successUrl        String?
+  cancelUrl         String?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  merchant Merchant  @relation(fields: [merchantId], references: [id], onDelete: Restrict)
+  payments Payment[]
+
+  @@unique([merchantId, orderReference])
+  @@index([merchantId, status, createdAt])
+  @@index([status, expiresAt])
+}
+
+model Payment {
+  id                String        @id @default(cuid())
+  merchantId        String
+  checkoutSessionId String?
+  amountMinor       BigInt
+  currency          String        @db.VarChar(3)
+  status            PaymentStatus @default(CREATED)
+  providerId        String?
+  providerPaymentId String?
+  failureCode       String?
+  failureMessage    String?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  completedAt       DateTime?
+
+  merchant        Merchant         @relation(fields: [merchantId], references: [id], onDelete: Restrict)
+  checkoutSession CheckoutSession? @relation(fields: [checkoutSessionId], references: [id], onDelete: Restrict)
+  attempts        PaymentAttempt[]
+
+  @@index([merchantId, status, createdAt])
+  @@index([providerId, providerPaymentId])
+  @@index([checkoutSessionId])
+}
+
+model PaymentAttempt {
+  id                String              @id @default(cuid())
+  paymentId         String
+  providerId        String
+  providerPaymentId String?
+  status            PaymentAttemptStatus @default(CREATED)
+  idempotencyKey    String
+  requestReference  String?
+  errorCode         String?
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+
+  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+
+  @@unique([providerId, idempotencyKey])
+  @@index([paymentId, createdAt])
+  @@index([providerId, providerPaymentId])
+}
+
+model ProviderEvent {
+  id                String             @id @default(cuid())
+  providerId        String
+  providerEventId   String
+  eventType         String
+  status            ProviderEventStatus @default(RECEIVED)
+  payload           Json
+  receivedAt        DateTime           @default(now())
+  processedAt       DateTime?
+  lastError         String?
+
+  @@unique([providerId, providerEventId])
+  @@index([status, receivedAt])
+}
+
+model IdempotencyRecord {
+  id           String   @id @default(cuid())
+  merchantId   String
+  operation    String
+  key          String
+  requestHash  String
+  resourceId   String?
+  responseCode Int?
+  createdAt    DateTime @default(now())
+  expiresAt    DateTime?
+
+  merchant Merchant @relation(fields: [merchantId], references: [id], onDelete: Restrict)
+
+  @@unique([merchantId, operation, key])
+  @@index([expiresAt])
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  actorType   String
+  actorId     String?
+  action      String
+  targetType  String
+  targetId    String?
+  outcome     String
+  requestId   String?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  @@index([targetType, targetId, createdAt])
+  @@index([actorType, actorId, createdAt])
+  @@index([action, createdAt])
+}
