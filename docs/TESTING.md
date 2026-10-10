@@ -1,24 +1,27 @@
-# Testing Strategy
+# Testing and Quality Gates
+
+## Current local quality commands
+```bash
+pnpm run db:generate
+pnpm run typecheck
+pnpm run lint
+pnpm run build
+```
+Check `package.json` before relying on a test script that may not yet exist. A clean build is not a substitute for automated tests.
 
 ## Required layers
-- Unit tests: state transitions, refund eligibility, idempotency, amount validation, provider status mapping.
-- Integration tests: PostgreSQL constraints, transactions, repositories, webhook verification, queue/outbox behavior.
-- API tests: authentication, authorization, validation, rate limits, stable error responses.
-- End-to-end tests: checkout creation, payment lifecycle in sandbox, duplicate webhooks, merchant isolation, refund flow.
-- Operational tests: restore backups, retry failed jobs, provider timeout recovery, and release rollback.
+- Unit: state transitions, amounts/currency, permissions, provider mapping, URL validation, idempotency fingerprints.
+- Integration: PostgreSQL constraints, transaction behavior, repositories, session revocation, event uniqueness, queue/outbox behavior.
+- API: authentication, scopes, merchant isolation, validation, rate limits, safe errors, BigInt serialization.
+- Provider contract: sandbox success, decline, pending, timeout, status query, refund, invalid signature, duplicates and reordering.
+- End-to-end: registration, onboarding, checkout, return, transaction history, admin roles, mobile layout/accessibility.
+- Resilience/security: provider outage, database interruption, queue delay, replay, SSRF, secret rotation, brute-force throttling, concurrent idempotent requests.
 
-## Critical scenarios
-- Same idempotency key and same request returns the same logical operation.
-- Same key with a different payload is rejected.
-- Concurrent requests cannot over-refund a payment.
-- Provider timeout does not automatically mark payment failed.
-- Duplicate or forged webhooks cannot duplicate or fabricate payment success.
-- Out-of-order events do not improperly reverse terminal states.
-- Merchant A cannot read Merchant B's checkout, payment, refund, or reports.
-- Secrets and raw payment credentials never appear in logs or client responses.
+## Financial invariants to test
+Same-key concurrent requests create one logical operation. Same key with different payload conflicts. Timeout remains uncertain. Repeated success events do not double-fulfill. Failure events cannot regress confirmed success. Partial refunds cannot exceed captured amount. Currency mismatch is rejected. Merchant A cannot read merchant B records.
 
-## Test data
-Use synthetic customer and merchant data. Use provider sandbox credentials and test cards/methods documented by the provider. Automated tests must never initiate live financial transactions.
+## Test data and safety
+Use synthetic fixtures, sandbox credentials, and isolated databases. Never put real card data or production secrets in tests. Tests must not call live money-moving endpoints.
 
-## Release quality gates
-Typecheck, lint, schema validation, automated tests, dependency/security review, migration review, and manual critical-flow verification must pass before release. A successful build alone is not a payment-readiness certification.
+## Release gate
+Require typecheck, lint, production build, schema/migration checks, unit/integration/API tests, dependency and secret scanning, manual checkout/accessibility review, and rollback rehearsal. Attach evidence to the release and block on unresolved critical/high security issues unless an accountable owner approves a documented mitigation.
