@@ -1,5 +1,5 @@
 import "server-only";
-import { ApiKeyEnvironment, CheckoutStatus, MerchantStatus, PaymentAttemptStatus, PaymentStatus, Prisma } from "@prisma/client";
+import { ApiKeyEnvironment, CheckoutStatus, MerchantStatus, PaymentAttemptStatus, PaymentStatus } from "@prisma/client";
 import { env } from "@/lib/env";
 import { prisma } from "@/server/infrastructure/database/prisma";
 import { AppError } from "@/server/shared/errors/app-error";
@@ -78,6 +78,24 @@ export async function createPayment(input: CreatePaymentInput) {
       providerRedirectUrl: previousAttempt.payment.providerRedirectUrl,
       replayed: true,
       uncertain: previousAttempt.status === PaymentAttemptStatus.UNKNOWN,
+    };
+  }
+
+  // A new idempotency key must not create a second attempt while an earlier
+  // attempt for the same checkout could still complete at the provider.
+  const existingPayment = await prisma.payment.findFirst({
+    where: { checkoutSessionId: checkout.id, status: { in: [PaymentStatus.CREATED, PaymentStatus.REQUIRES_ACTION, PaymentStatus.PROCESSING, PaymentStatus.SUCCEEDED, PaymentStatus.REQUIRES_REVIEW] } },
+    orderBy: { createdAt: "desc" },
+  });
+  if (existingPayment) {
+    if (existingPayment.providerId !== input.providerId) {
+      throw new AppError("CONFLICT", "A payment attempt already exists with another provider.", 409);
+    }
+    return {
+      payment: existingPayment,
+      providerRedirectUrl: existingPayment.providerRedirectUrl,
+      replayed: true,
+      uncertain: existingPayment.status === PaymentStatus.REQUIRES_REVIEW,
     };
   }
 
