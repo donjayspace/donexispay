@@ -30,6 +30,11 @@ jobs:
           node-version: 20
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
+      - name: Export generated lockfile during bootstrap
+        run: |
+          echo "PNPM_LOCKFILE_BEGIN"
+          cat pnpm-lock.yaml
+          echo "PNPM_LOCKFILE_END"
       - name: Generate Prisma Client
         run: pnpm run db:generate
       - name: Typecheck
