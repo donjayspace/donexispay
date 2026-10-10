@@ -1,15 +1,13 @@
 # DonexisPay Project Structure
 
-This is the canonical repository layout. Keep application routes under `src/app/`, business logic under `src/server/modules/`, shared technical infrastructure under `src/server/infrastructure/`, and shared lightweight helpers under `src/lib/`.
+Keep the requested top-level structure. Add files beneath the correct module; do not create parallel architecture roots.
 
 ```text
 donexispay/
 ├── prisma/
 │   ├── schema.prisma
 │   └── migrations/
-│
 ├── public/
-│
 ├── src/
 │   ├── app/
 │   │   ├── (marketing)/
@@ -21,52 +19,25 @@ donexispay/
 │   │       ├── v1/
 │   │       ├── webhooks/
 │   │       └── health/
-│   │
 │   ├── server/
 │   │   ├── modules/
-│   │   │   ├── auth/
-│   │   │   ├── users/
-│   │   │   ├── merchants/
-│   │   │   ├── onboarding/
-│   │   │   ├── checkout/
-│   │   │   ├── payments/
-│   │   │   ├── transactions/
-│   │   │   ├── providers/
-│   │   │   ├── payment-methods/
-│   │   │   ├── customers/
-│   │   │   ├── refunds/
-│   │   │   ├── billing/
-│   │   │   ├── payment-links/
-│   │   │   ├── webhooks/
-│   │   │   ├── settlements/
-│   │   │   ├── reconciliation/
-│   │   │   ├── pricing/
-│   │   │   ├── risk/
-│   │   │   ├── notifications/
-│   │   │   ├── audit/
-│   │   │   └── analytics/
-│   │   │
+│   │   │   ├── auth/ users/ merchants/ onboarding/ checkout/ payments/
+│   │   │   ├── transactions/ providers/ payment-methods/ customers/
+│   │   │   ├── refunds/ billing/ payment-links/ webhooks/ settlements/
+│   │   │   ├── reconciliation/ pricing/ risk/ notifications/ audit/ analytics/
 │   │   └── infrastructure/
-│   │       ├── database/
-│   │       ├── security/
-│   │       ├── encryption/
-│   │       ├── queues/
-│   │       ├── observability/
-│   │       ├── logging/
-│   │       ├── cache/
-│   │       ├── configuration/
-│   │       └── storage/
-│   │
+│   │       ├── database/ security/ encryption/ queues/ observability/
+│   │       └── logging/ cache/ configuration/ storage/
 │   ├── components/
 │   │   ├── ui/
 │   │   ├── forms/
 │   │   └── layouts/
-│   │
 │   └── lib/
 │       ├── env.ts
 │       ├── constants.ts
 │       └── utils.ts
-│
+├── docs/
+├── scripts/
 ├── prisma.config.ts
 ├── next.config.ts
 ├── package.json
@@ -74,24 +45,27 @@ donexispay/
 └── tsconfig.json
 ```
 
-## Directory responsibilities
+## Suggested module convention
+```text
+src/server/modules/<module>/
+├── domain/       # statuses, invariants, domain types
+├── schemas/      # Zod input schemas
+├── repositories/ # module-owned Prisma queries
+├── services/     # use cases and orchestration
+├── errors/       # safe domain errors when needed
+├── types/        # public module types
+└── index.ts      # deliberate public exports
+```
 
-- `prisma/`: the modular monolith's shared PostgreSQL schema and migration history. Module data ownership is enforced in application boundaries; do not split the database prematurely.
-- `src/app/`: Next.js pages, layouts, route groups, and thin API route handlers. Route groups such as `(marketing)` do not change public URLs.
-- `src/server/modules/`: domain rules, validation schemas, repositories, and use-case services grouped by business capability. A module owns its rules and exposes explicit public interfaces.
-- `src/server/infrastructure/`: database access, security helpers, encryption, durable queue adapters, observability, logging, cache, environment configuration, and storage integrations.
-- `src/components/`: reusable presentation components. Client components must not import server-only modules.
-- `src/lib/`: small shared utilities, constants, and validated environment exports. Financial business rules belong in modules, not generic utilities.
-- `public/`: static public assets only; never place secrets or private customer/payment documents here.
+Use only folders that have a real responsibility; empty boilerplate is not required. Provider modules may add `adapters/<provider>/` for clients, response mapping, capability declarations, and webhook verification.
 
-## Implementation rules
+## Responsibilities
+- Route handler: authenticate, validate, call a service, return a safe response.
+- Service: enforce business rules, coordinate transactions/provider calls, write audit/outbox records.
+- Repository: data access scoped to the module and authenticated tenant.
+- Schema: validate all untrusted inputs.
+- Infrastructure: reusable technical capability, not product-specific policy.
+- UI: display state and call authorized endpoints; never decide payment truth.
 
-1. Keep route handlers thin; call a service from the owning module.
-2. Keep provider-specific SDK calls behind `providers/` adapter contracts.
-3. Do not trust browser redirects as proof of payment.
-4. Persist idempotency and provider-event deduplication in PostgreSQL.
-5. Use integer minor units or exact decimal representations for money; never use floating-point arithmetic.
-6. Never hold a database transaction open while waiting for a provider network request.
-7. Create feature files when implementing a feature; `.gitkeep` files only preserve intentionally planned directories.
-8. Keep one package manager and its corresponding committed lockfile. The repository should use pnpm; generate and verify `pnpm-lock.yaml` with the repository's pinned pnpm version rather than hand-writing dependency resolutions.
-9. Keep live payment execution disabled until provider approval, security checks, operational readiness, and applicable legal/compliance reviews are complete.
+## Engineering conventions
+Use strict TypeScript, server-only markers for secret-bearing modules, intentional public exports, and comments explaining business rules/safety decisions. Keep tests near modules or in a documented test directory. Commit only `pnpm-lock.yaml`; do not mix package managers. Never commit `.env.local`, production credentials, database dumps, or generated secrets.
