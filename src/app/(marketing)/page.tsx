@@ -64,7 +64,7 @@ export default function HomePage() {
             <div className="preview-body">
               <div className="preview-sidebar"><div className="preview-logo">D</div><span className="preview-side-active">▦</span><span>◷</span><span>⇄</span><span>⚙</span></div>
               <div className="preview-main">
-                <div className="preview-greeting"><div><small>MONDAY, OCTOBER 12</small><h3>Good morning</h3></div><span className="avatar">DP</span></div>
+                <div className="preview-greeting"><div><small>WORKSPACE / OVERVIEW</small><h3>Good morning</h3></div><span className="avatar">DP</span></div>
                 <div className="preview-stats">
                   <div><small>Payment volume</small><strong>— — —</strong><em>Connect a provider</em></div>
                   <div><small>Successful payments</small><strong>—</strong><em>Awaiting integration</em></div>
