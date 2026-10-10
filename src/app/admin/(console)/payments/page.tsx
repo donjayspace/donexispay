@@ -1,3 +1,4 @@
+import { requireAdminPermission } from "@/server/modules/auth/admin/permissions";
 import { getPaymentAdminOverview } from "@/server/modules/payments/service";
 
 export const dynamic = "force-dynamic";
@@ -12,6 +13,7 @@ function formatMoney(minor: bigint, currency: string) {
 }
 
 export default async function AdminPaymentsPage() {
+  await requireAdminPermission("payments");
   const data = await getPaymentAdminOverview();
   return <div className="admin-content">
     <section className="admin-page-heading"><div><p className="section-kicker">Payment operations</p><h1>Payments</h1><p>Inspect persisted payment states. A success state must come from verified server-side provider processing.</p></div><span className="admin-safe-badge">Read-only</span></section>
