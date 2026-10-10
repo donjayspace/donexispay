@@ -16,6 +16,7 @@ const links = [
   { href: "/admin/providers", label: "Providers", icon: "⌁" },
   { href: "/admin/events", label: "Provider events", icon: "↔" },
   { href: "/admin/users", label: "Users", icon: "♙" },
+  { href: "/admin/administrators", label: "Administrators", icon: "♜" },
   { href: "/admin/audit", label: "Audit trail", icon: "≡" },
   { href: "/admin/settings", label: "System settings", icon: "⚙" },
 ];
