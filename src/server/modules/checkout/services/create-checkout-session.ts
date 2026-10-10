@@ -58,6 +58,7 @@ export async function createCheckoutSession(input: {
   merchantId: string;
   idempotencyKey: string;
   data: CreateCheckoutSessionInput;
+  paymentLinkId?: string;
 }): Promise<{ result: CreateCheckoutSessionResult; replayed: boolean }> {
   const merchant = await prisma.merchant.findUnique({
     where: { id: input.merchantId },
@@ -106,6 +107,7 @@ export async function createCheckoutSession(input: {
           expiresAt,
           successUrl,
           cancelUrl,
+          paymentLinkId: input.paymentLinkId,
         },
         select: {
           id: true,
