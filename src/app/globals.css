@@ -442,3 +442,17 @@ footer { color: var(--muted); font-size: .9rem; }
 @media (max-width: 1120px) { .admin-metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 760px) { .admin-sidebar { position: static; width: auto; padding: 14px 15px 10px; border-right: 0; border-bottom: 1px solid #e7ebf3; }.admin-nav-label { margin: 18px 5px 8px; }.admin-nav { display: flex; gap: 5px; overflow-x: auto; padding-bottom: 5px; }.admin-nav-link { flex: 0 0 auto; min-height: 38px; padding: 0 10px; font-size: .74rem; }.admin-sidebar-bottom { display: none; }.admin-main { margin-left: 0; }.admin-topbar { position: static; min-height: 58px; padding: 10px 16px; font-size: .68rem; }.admin-content { padding: 24px 15px 35px; }.admin-page-heading { flex-direction: column; }.admin-safe-badge { white-space: normal; }.admin-metric-card { padding: 15px; }.admin-metric-card > strong { font-size: 1.45rem; }.admin-shortcut-grid { grid-template-columns: minmax(0, 1fr); }.admin-panel-heading { align-items: flex-start; padding: 16px; }.admin-settings-list { padding-inline: 16px; } }
 @media (max-width: 420px) { .admin-metric-grid { grid-template-columns: minmax(0, 1fr); }.admin-topbar > div { max-width: 70%; line-height: 1.6; }.admin-setting-row { align-items: flex-start; flex-direction: column; }.admin-login-card { border-radius: 17px; } }
+
+/* Route-aware admin navigation: the active state follows the current URL. */
+.admin-nav-link.active {
+  background: #eef1ff;
+  color: #315efb;
+  box-shadow: inset 3px 0 0 #315efb;
+}
+.admin-nav-link.active > span {
+  color: #315efb;
+}
+.admin-nav-link:focus-visible {
+  outline: 2px solid #315efb;
+  outline-offset: 2px;
+}
