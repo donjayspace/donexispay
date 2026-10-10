@@ -14,5 +14,5 @@ export type AuthenticatedUser = {
   email: string;
   name: string | null;
   image: string | null;
-  role: "USER" | "ADMIN" | "SUPER_ADMIN";
+  role: "USER";
 };
