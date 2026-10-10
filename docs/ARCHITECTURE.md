@@ -1,13 +1,13 @@
 # System Architecture
 
 ## Decision
-Start with a Next.js App Router full-stack modular monolith. Business modules live in `server/modules/`; shared technical infrastructure lives in `server/infrastructure/`. Background workers may run as separate processes when required, without immediately splitting business modules into microservices.
+Start with a Next.js App Router full-stack modular monolith. Business modules live in `src/server/modules/`; shared technical infrastructure lives in `src/server/infrastructure/`. Background workers may run as separate processes when required, without immediately splitting business modules into microservices.
 
 ## Layers
-1. Presentation: `app/`, `components/`. Renders UI; never owns authoritative financial rules.
-2. Transport: `app/api/`. Validates requests, authenticates callers, invokes services, maps results to HTTP.
-3. Business: `server/modules/`. Owns business policies, state transitions, orchestration, and module invariants.
-4. Infrastructure: `server/infrastructure/`. Database client, config, logging, queue, cryptography, monitoring, and technical adapters.
+1. Presentation: `src/app/`, `src/components/`. Renders UI; never owns authoritative financial rules.
+2. Transport: `src/app/api/`. Validates requests, authenticates callers, invokes services, maps results to HTTP.
+3. Business: `src/server/modules/`. Owns business policies, state transitions, orchestration, and module invariants.
+4. Infrastructure: `src/server/infrastructure/`. Database client, config, logging, queue, cryptography, monitoring, and technical adapters.
 5. Persistence: PostgreSQL through Prisma, with constraints, indexes, and controlled migrations.
 
 ## Module ownership
