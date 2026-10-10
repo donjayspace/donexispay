@@ -119,6 +119,8 @@ model CheckoutSession {
 
   merchant Merchant  @relation(fields: [merchantId], references: [id], onDelete: Restrict)
   payments Payment[]
+  paymentLinkId String?
+  paymentLink PaymentLink? @relation(fields: [paymentLinkId], references: [id], onDelete: SetNull)
 
   @@unique([merchantId, orderReference])
   @@index([merchantId, status, createdAt])
