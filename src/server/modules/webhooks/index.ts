@@ -1,0 +1,1 @@
+export { getProviderEventAdminOverview } from "./service";
