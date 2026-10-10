@@ -8,9 +8,11 @@ This directory is the engineering source of truth for product requirements, arch
 3. [Canonical project structure](./PROJECT-STRUCTURE.md)
 4. [Route-to-file map](./ROUTES.md)
 5. [Database and local development](./DATABASE.md)
+6. [Environment variables and secrets](./ENVIRONMENT.md)
 
 ## Engineering guides
 - [API conventions](./API.md)
+- [Route map and page wiring](./ROUTES.md)
 - [Security engineering](./SECURITY.md)
 - [Payment flows](./PAYMENT-FLOWS.md)
 - [Provider integration](./PROVIDERS.md)
