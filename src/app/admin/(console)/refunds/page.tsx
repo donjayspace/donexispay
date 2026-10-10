@@ -1,8 +1,10 @@
+import { requireAdminPermission } from "@/server/modules/auth/admin/permissions";
 import { listAdminRefunds } from "@/server/modules/refunds/admin-service";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminRefundsPage() {
+  await requireAdminPermission("refunds");
   const rows = await listAdminRefunds();
   return (
     <div className="admin-content">
