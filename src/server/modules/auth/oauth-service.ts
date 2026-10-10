@@ -29,7 +29,7 @@ export async function resolveOAuthUser(identity: OAuthIdentity): Promise<Authent
       email: existingAccount.user.email,
       name: existingAccount.user.name,
       image: existingAccount.user.image,
-      role: existingAccount.user.role,
+      role: "USER",
     };
   }
 
@@ -66,7 +66,7 @@ export async function resolveOAuthUser(identity: OAuthIdentity): Promise<Authent
       });
       return createdUser;
     });
-    return { id: user.id, email: user.email, name: user.name, image: user.image, role: user.role };
+    return { id: user.id, email: user.email, name: user.name, image: user.image, role: "USER" };
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
       const racedAccount = await prisma.oAuthAccount.findUnique({
@@ -79,7 +79,7 @@ export async function resolveOAuthUser(identity: OAuthIdentity): Promise<Authent
           email: racedAccount.user.email,
           name: racedAccount.user.name,
           image: racedAccount.user.image,
-          role: racedAccount.user.role,
+          role: "USER",
         };
       }
       throw new OAuthAccountConflictError();
