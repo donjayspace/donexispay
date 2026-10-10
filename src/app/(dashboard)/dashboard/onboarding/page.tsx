@@ -10,7 +10,7 @@ const steps = [
 
 export default function OnboardingPage() {
   return (
-    <DashboardShell active="Overview" breadcrumb="Onboarding">
+    <DashboardShell active="Onboarding" breadcrumb="Onboarding">
       <div className="dashboard-content">
         <section className="dashboard-heading"><div><p className="dashboard-kicker">Getting started</p><h1>Set up your workspace</h1><p>Prepare the essentials before connecting a payment provider.</p></div><span className="environment-chip">Test environment</span></section>
         <section className="demo-banner"><span className="demo-banner-icon" aria-hidden="true">i</span><div><strong>Live payments remain disabled</strong><p>These are setup guidance items, not proof of regulatory approval. Do not enable real payments until provider approval, legal review, security controls, and operational readiness are complete.</p></div></section>
