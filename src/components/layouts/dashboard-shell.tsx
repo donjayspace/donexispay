@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { getCurrentUser } from "@/server/modules/auth";
 
 type DashboardShellProps = {
-  active: "Overview" | "Onboarding" | "Transactions" | "Checkout" | "Payment links" | "Customers" | "Refunds" | "Developers" | "Settings" | "Admin";
+  active: "Overview" | "Onboarding" | "Transactions" | "Checkout" | "Payment links" | "Customers" | "Refunds" | "Developers" | "Settings";
   children: ReactNode;
   breadcrumb?: string;
 };
@@ -33,7 +33,6 @@ export async function DashboardShell({ active, children, breadcrumb = "Overview"
             <Link href="/dashboard/onboarding" className={active === "Onboarding" ? "active" : ""} aria-current={active === "Onboarding" ? "page" : undefined}><span aria-hidden="true">✓</span>Getting started</Link>
             <Link href="/dashboard/developers" className={active === "Developers" ? "active" : ""} aria-current={active === "Developers" ? "page" : undefined}><span aria-hidden="true">⌘</span>Developers</Link>
             <Link href="/dashboard/settings" className={active === "Settings" ? "active" : ""} aria-current={active === "Settings" ? "page" : undefined}><span aria-hidden="true">⚙</span>Settings</Link>
-            <Link href="/admin" className={active === "Admin" ? "active" : ""} aria-current={active === "Admin" ? "page" : undefined}><span aria-hidden="true">♙</span>Admin console</Link>
           </nav>
           <div className="sidebar-bottom"><div className="workspace-card"><span className="workspace-avatar">DP</span><span><strong>Demo workspace</strong><small>Development environment</small></span></div></div>
         </aside>
