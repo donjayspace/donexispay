@@ -1,8 +1,9 @@
 import "server-only";
-import { createHash, randomBytes } from "node:crypto";
+import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { prisma } from "@/server/infrastructure/database/prisma";
 import { env } from "@/lib/env";
 import { AppError } from "@/server/shared/errors/app-error";
+import { createCheckoutSession } from "@/server/modules/checkout/services/create-checkout-session";
 
 const hashToken = (token: string) => createHash("sha256").update(token, "utf8").digest("hex");
 
@@ -20,6 +21,36 @@ export async function createPaymentLink(input: { merchantId: string; name: strin
   });
   // The public URL resolver is intentionally separate from provider execution.
   return { ...link, amountMinor: link.amountMinor.toString(), url: new URL(`/checkout-link/${token}`, env.APP_URL).toString() };
+}
+
+/**
+ * Resolve a public link into a short-lived checkout session. This only prepares the
+ * checkout experience; a provider adapter must still confirm any resulting payment.
+ */
+export async function createCheckoutSessionFromPaymentLink(token: string) {
+  if (!/^[A-Za-z0-9_-]{40,}$/.test(token)) throw new AppError("NOT_FOUND", "Payment link was not found.", 404);
+  const link = await prisma.paymentLink.findUnique({
+    where: { tokenHash: hashToken(token) },
+    select: { id: true, merchantId: true, name: true, amountMinor: true, currency: true, description: true, status: true, expiresAt: true, successUrl: true, cancelUrl: true },
+  });
+  if (!link || link.status !== "ACTIVE" || (link.expiresAt && link.expiresAt <= new Date())) {
+    throw new AppError("NOT_FOUND", "Payment link is inactive or expired.", 404);
+  }
+
+  const created = await createCheckoutSession({
+    merchantId: link.merchantId,
+    idempotencyKey: `payment-link:${link.id}:${randomUUID()}`,
+    paymentLinkId: link.id,
+    data: {
+      orderReference: `pl_${link.id}_${randomUUID()}`.slice(0, 120),
+      amountMinor: link.amountMinor.toString(),
+      currency: link.currency,
+      description: link.description || link.name,
+      successUrl: link.successUrl ?? undefined,
+      cancelUrl: link.cancelUrl ?? undefined,
+    },
+  });
+  return created.result;
 }
 
 export async function listMerchantPaymentLinks(merchantId: string) {
