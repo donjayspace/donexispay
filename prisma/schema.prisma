@@ -300,3 +300,15 @@ model AdminSession {
   @@index([expiresAt])
   @@index([revokedAt])
 }
+
+/// Durable, per-account throttling for the privileged admin login endpoint.
+model AdminLoginAttempt {
+  emailKey        String   @id
+  attempts        Int      @default(0)
+  windowStartedAt DateTime @default(now())
+  blockedUntil    DateTime?
+  updatedAt       DateTime @updatedAt
+
+  @@index([blockedUntil])
+  @@index([updatedAt])
+}
