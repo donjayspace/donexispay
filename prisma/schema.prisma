@@ -94,18 +94,19 @@ model ApiKey {
 }
 
 model CheckoutSession {
-  id             String         @id @default(cuid())
-  merchantId     String
-  orderReference String
-  amountMinor    BigInt
-  currency       String         @db.VarChar(3)
-  description    String?
-  status         CheckoutStatus @default(OPEN)
-  expiresAt      DateTime
-  successUrl     String?
-  cancelUrl      String?
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
+  id                String         @id @default(cuid())
+  merchantId        String
+  orderReference    String
+  amountMinor       BigInt
+  currency          String         @db.VarChar(3)
+  description       String?
+  checkoutTokenHash String         @unique
+  status            CheckoutStatus @default(OPEN)
+  expiresAt         DateTime
+  successUrl        String?
+  cancelUrl         String?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
 
   merchant Merchant  @relation(fields: [merchantId], references: [id], onDelete: Restrict)
   payments Payment[]
@@ -174,15 +175,16 @@ model ProviderEvent {
 }
 
 model IdempotencyRecord {
-  id           String   @id @default(cuid())
-  merchantId   String
-  operation    String
-  key          String
-  requestHash  String
-  resourceId   String?
-  responseCode Int?
-  createdAt    DateTime @default(now())
-  expiresAt    DateTime?
+  id             String   @id @default(cuid())
+  merchantId     String
+  operation      String
+  key            String
+  requestHash    String
+  resourceId     String?
+  responseCode   Int?
+  responsePayload Json?
+  createdAt      DateTime @default(now())
+  expiresAt      DateTime?
 
   merchant Merchant @relation(fields: [merchantId], references: [id], onDelete: Restrict)
 
