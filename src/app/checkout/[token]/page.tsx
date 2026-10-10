@@ -11,7 +11,7 @@ function formatMinorAmount(amountMinor: bigint, currency: string): string {
     fractionDigits = new Intl.NumberFormat("en", {
       style: "currency",
       currency,
-    }).resolvedOptions().maximumFractionDigits;
+    }).resolvedOptions().maximumFractionDigits ?? 2;
   } catch {
     return `${currency} ${amountMinor.toString()} minor units`;
   }
