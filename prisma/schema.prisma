@@ -260,3 +260,43 @@ model AuthSession {
   @@index([expiresAt])
   @@index([revokedAt])
 }
+
+/// Administrative identities are deliberately separate from customer OAuth users.
+enum AdminRole {
+  SUPPORT
+  OPERATIONS
+  ADMIN
+  SUPER_ADMIN
+}
+
+model AdminUser {
+  id             String    @id @default(cuid())
+  email          String    @unique
+  displayName    String
+  passwordHash   String
+  role           AdminRole @default(ADMIN)
+  disabledAt     DateTime?
+  passwordChangedAt DateTime @default(now())
+  lastLoginAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  sessions AdminSession[]
+
+  @@index([role, createdAt])
+  @@index([disabledAt])
+}
+
+model AdminSession {
+  id        String    @id @default(cuid())
+  adminId   String
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+  admin     AdminUser @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId, expiresAt])
+  @@index([expiresAt])
+  @@index([revokedAt])
+}
