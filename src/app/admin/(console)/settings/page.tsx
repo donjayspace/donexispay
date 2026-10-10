@@ -1,8 +1,10 @@
+import { requireAdminPermission } from "@/server/modules/auth/admin/permissions";
 import { env } from "@/lib/env";
 
 export const dynamic = "force-dynamic";
 
-export default function AdminSettingsPage() {
+export default async function AdminSettingsPage() {
+  await requireAdminPermission("settings");
   const items = [
     { label: "Application URL", value: env.APP_URL, state: "Configured" },
     { label: "Database", value: "Connection string present (value hidden)", state: "Configured" },
