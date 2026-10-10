@@ -1,0 +1,1 @@
+export { listConfiguredPaymentMethods } from "./service";
