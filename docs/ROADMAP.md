@@ -1,52 +1,45 @@
-# Implementation Roadmap
+# Development Roadmap
 
-## Phase 0 — Repository foundation
-- Next.js, TypeScript, lint/typecheck scripts.
-- Environment validation and Prisma client.
-- Initial PostgreSQL schema.
-- Error response convention and health endpoint.
-- Architecture and security documentation.
-- Live payments disabled by default.
+This roadmap defines delivery gates, not a claim that all listed features are implemented. Verify the repository and attach evidence before marking any item complete.
 
-## Phase 1 — Identity and merchant security
-- User/session authentication.
-- Merchant membership and server-side authorization.
-- API key issuance, hashing, scopes, rotation, and revocation.
-- Audit events and authentication rate limiting.
-- Tenant-isolation tests.
+## Phase 0 — Foundation
+- [ ] Clean install, stable build, environment validation, lint and typecheck.
+- [ ] PostgreSQL/Prisma schema and reviewed initial migration.
+- [ ] Request IDs, safe errors, structured logs, health endpoint.
+- [ ] Architecture, route map, ADRs, local setup guide.
+- Exit: clean CI build; live payments disabled.
+
+## Phase 1 — Identity and merchant isolation
+- [ ] Customer OAuth and session lifecycle.
+- [ ] Separate admin credentials/session and login throttling.
+- [ ] Merchant memberships and onboarding review.
+- [ ] API key hashing, scopes, environment separation, rotation/revocation.
+- Exit: tenant and role-boundary tests pass.
 
 ## Phase 2 — Checkout and payment records
-- Checkout session service and secure retrieval token.
-- Merchant API endpoint with authentication and idempotency.
-- Session expiry and return URL policy.
-- Payment/attempt repositories and state transition service.
-- Safe checkout UI and status page.
+- [ ] Hosted sessions, expiry, return URL policy.
+- [ ] Durable idempotency with request fingerprints and concurrency tests.
+- [ ] Payment/attempt persistence and unknown-outcome recovery.
+- Exit: retries cannot create duplicate logical payment.
 
-## Phase 3 — First provider
-- Select and obtain approval from a provider.
-- Implement adapter, timeouts, error mapping, and sandbox tests.
-- Implement authoritative payment status retrieval.
-- Verify provider webhooks and deduplicate events.
-- Test unknown outcomes and recovery.
+## Phase 3 — Provider sandbox
+- [ ] Written provider/business approval and capability matrix.
+- [ ] Adapter, sandbox integration, webhook verification, status query.
+- [ ] Contract tests, timeout handling, reconciliation.
+- Exit: sandbox scenarios pass; live gate remains false.
 
-## Phase 4 — Refunds and reconciliation
-- Refund data model and concurrent refundable amount protection.
-- Provider refund adapter where supported.
-- Reconciliation runs, discrepancy queue, and resolution audit.
-- Reporting with currency-safe aggregation.
+## Phase 4 — Operational finance
+- [ ] Refund lifecycle where supported.
+- [ ] Reconciliation import/matching and exception ownership.
+- [ ] Settlement reporting and immutable audit trail.
+- Exit: finance/operations review and exception runbook.
 
 ## Phase 5 — Production readiness
-- Threat model and security review.
-- Legal/compliance and provider approval.
-- Load/failure-mode testing.
-- Monitoring, alerting, backups, restore drills, incident response.
-- Controlled production rollout with live payments disabled until all gates pass.
+- [ ] Threat model, security review, dependency/secret scanning.
+- [ ] Tested backups, incident response, monitoring and alert owners.
+- [ ] Legal/compliance approval, merchant terms, privacy notices, support escalation.
+- [ ] Staging rehearsal, migration/rollback plan, launch approval.
+- Exit: accountable owners sign off every launch gate.
 
 ## Phase 6 — Expansion
-- Additional providers and methods.
-- Safe routing/failover only after unknown outcomes are resolved.
-- Advanced reporting and reconciliation automation.
-- Extract workers or modules only when operational evidence justifies it.
-
-## Release rule
-No phase is considered complete merely because code compiles. Requirements, tests, operational readiness, and applicable legal/provider approvals must also pass.
+Consider more providers, payment methods, analytics, automation, or service extraction only after measuring demand, risk, and operating cost. Record material decisions in ADRs.
