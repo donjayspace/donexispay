@@ -1,8 +1,10 @@
+import { requireAdminPermission } from "@/server/modules/auth/admin/permissions";
 import { getUserAdminOverview } from "@/server/modules/users/service";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminUsersPage() {
+  await requireAdminPermission("users");
   const data = await getUserAdminOverview();
   return <div className="admin-content">
     <section className="admin-page-heading"><div><p className="section-kicker">Customer accounts</p><h1>Users</h1><p>Review user registration and account state. Administrator identities are stored separately.</p></div></section>
