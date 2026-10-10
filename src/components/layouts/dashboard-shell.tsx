@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { getCurrentUser } from "@/server/modules/auth";
 
 type DashboardShellProps = {
   active: "Overview" | "Onboarding" | "Transactions" | "Checkout" | "Payment links" | "Customers" | "Refunds" | "Developers" | "Settings" | "Admin";
@@ -16,7 +17,8 @@ const primaryLinks = [
   { label: "Refunds", href: "/dashboard/refunds", icon: "↶" },
 ];
 
-export function DashboardShell({ active, children, breadcrumb = "Overview" }: DashboardShellProps) {
+export async function DashboardShell({ active, children, breadcrumb = "Overview" }: DashboardShellProps) {
+  const user = await getCurrentUser();
   return (
     <div className="dashboard-page">
       <div className="dashboard-shell">
@@ -36,7 +38,7 @@ export function DashboardShell({ active, children, breadcrumb = "Overview" }: Da
           <div className="sidebar-bottom"><div className="workspace-card"><span className="workspace-avatar">DP</span><span><strong>Demo workspace</strong><small>Development environment</small></span></div></div>
         </aside>
         <main className="dashboard-main">
-          <header className="dashboard-topbar"><div className="breadcrumb">Workspace <span aria-hidden="true">/</span> <strong>{breadcrumb}</strong></div><div className="topbar-actions"><span className="environment-chip">Test environment</span><Link className="workspace-avatar" href="/login" aria-label="Account and sign-in preview">DP</Link></div></header>
+          <header className="dashboard-topbar"><div className="breadcrumb">Workspace <span aria-hidden="true">/</span> <strong>{breadcrumb}</strong></div><div className="topbar-actions"><span className="environment-chip">Test environment</span><span className="account-email" title={user?.email}>{user?.name || user?.email || "Workspace account"}</span><form action="/api/auth/logout" method="post"><button className="button button-secondary button-small" type="submit">Sign out</button></form></div></header>
           {children}
         </main>
       </div>
