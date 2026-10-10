@@ -1,3 +1,11 @@
+-- Customer OAuth identities are never administrator identities. Existing legacy role values are downgraded.
+ALTER TABLE "User" ALTER COLUMN "role" DROP DEFAULT;
+ALTER TYPE "UserRole" RENAME TO "UserRole_legacy";
+CREATE TYPE "UserRole" AS ENUM ('USER');
+ALTER TABLE "User" ALTER COLUMN "role" TYPE "UserRole" USING ('USER'::"UserRole");
+ALTER TABLE "User" ALTER COLUMN "role" SET DEFAULT 'USER';
+DROP TYPE "UserRole_legacy";
+
 -- Separate admin credentials and sessions from customer OAuth identities.
 CREATE TYPE "AdminRole" AS ENUM ('SUPPORT', 'OPERATIONS', 'ADMIN', 'SUPER_ADMIN');
 
