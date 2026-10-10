@@ -39,7 +39,7 @@ const environmentSchema = z.object({
   EMAIL_FROM: z.string().optional().default(""),
   RESEND_API_KEY: optionalSecret,
   SMTP_HOST: optionalSecret,
-  SMTP_PORT: z.coerce.number().int().min(1).max(65535).optional(),
+  SMTP_PORT: z.preprocess((value) => value === "" ? undefined : value, z.coerce.number().int().min(1).max(65535).optional()),
   SMTP_USER: optionalSecret,
   SMTP_PASSWORD: optionalSecret,
 
