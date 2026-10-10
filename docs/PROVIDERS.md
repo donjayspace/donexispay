@@ -1,25 +1,23 @@
-# Payment Provider Integrations
+# Payment Provider Integration Guide
 
-## Selection gate
-Choose a provider only after confirming supported business model, countries, currencies, methods, merchant categories, settlement model, refunds, disputes, webhook behavior, and commercial/legal requirements. Do not enable live payments before provider approval.
+## Approval gate
+Do not select a provider based only on API availability. Confirm operating model, launch countries/currencies/methods, merchant categories, underwriting/KYB, settlement flow, refunds/disputes, webhook guarantees, support SLA, data terms, and written production approval.
 
-## Adapter responsibilities
-Each adapter translates internal requests into provider-specific API calls and normalizes responses. It should expose explicit capabilities, timeouts, safe error classification, idempotency behavior, payment status retrieval, refunds where supported, and webhook verification.
+## Adapter contract
+Keep vendor behavior behind a provider adapter. Each adapter should declare provider ID/capabilities and implement supported payment creation/confirmation, authoritative status query, refunds where supported, webhook verification/parsing, status mapping, safe error normalization, timeout, retry, and idempotency rules. Core modules use internal types, not vendor SDK types.
 
-## Provider interface
-The initial contract is in `server/modules/providers/types/payment-provider.ts`. Extend it deliberately as provider requirements become clear. Provider-specific SDK types should not leak into checkout and payment domain models.
+## Integration workflow
+1. Create a provider decision record and capability matrix.
+2. Read official provider API and security documentation; pin a supported API version.
+3. Configure sandbox-only credentials locally.
+4. Implement a typed client with bounded timeouts/retries and redacted errors.
+5. Implement signature verification according to the provider specification.
+6. Add contract tests for success, decline, pending, timeout, duplicate/out-of-order events, and refund where supported.
+7. Test outage and reconciliation behavior.
+8. Complete security/legal review and obtain explicit approval before enabling live credentials.
 
-## Required behavior
-- Use provider idempotency support where available.
-- Set bounded request timeouts.
-- Distinguish declines, validation errors, transient failures, and unknown outcomes.
-- Never log authorization headers, secrets, raw payment credentials, or unnecessary personal data.
-- Validate amount and currency constraints before sending.
-- Store provider references and safe diagnostic metadata.
-- Do not trust browser return parameters as payment confirmation.
+## Idempotency and retries
+Pass stable provider idempotency keys where supported. Never blindly retry a non-idempotent charge after timeout. Query by provider reference or reconcile first. Retry only documented transient failures using bounded exponential backoff and jitter.
 
-## Testing
-Use provider sandbox credentials and documented test scenarios. Test duplicate requests, timeouts, delayed events, out-of-order webhooks, declines, refunds, and provider outages. Tests must not trigger live transactions.
-
-## Configuration
-Provider secrets belong in a secret manager or protected environment configuration. Separate sandbox and production credentials. Keep live payment execution disabled until security and operational gates pass.
+## Configuration and certification
+Use per-environment credentials and webhook secrets. Fail closed when required config is missing. Do not silently route live traffic to sandbox or another provider. Before launch, verify capabilities, restrictions, sandbox evidence, webhook authenticity, unknown outcomes, refund behavior, reconciliation ownership, and written provider approval.
