@@ -21,7 +21,7 @@ export async function getCurrentUser(): Promise<AuthenticatedUser | null> {
     email: session.user.email,
     name: session.user.name,
     image: session.user.image,
-    role: session.user.role,
+    role: "USER",
   };
 }
 
@@ -31,8 +31,3 @@ export async function requireUser(): Promise<AuthenticatedUser> {
   return user;
 }
 
-export async function requireAdmin(): Promise<AuthenticatedUser> {
-  const user = await requireUser();
-  if (user.role !== "ADMIN" && user.role !== "SUPER_ADMIN") redirect("/dashboard");
-  return user;
-}
