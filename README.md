@@ -13,17 +13,17 @@ This repository is being initialized with the application foundation and documen
 - PostgreSQL
 - Prisma ORM
 - Zod validation
-- Server-side business modules under `server/modules/`
-- Shared technical infrastructure under `server/infrastructure/`
+- Server-side business modules under `src/server/modules/`
+- Shared technical infrastructure under `src/server/infrastructure/`
 
 ## Quick start
 
 1. Install Node.js LTS and PostgreSQL.
 2. Copy `.env.example` to `.env` and set local values.
-3. Install dependencies with `npm install`.
-4. Generate the Prisma client with `npm run db:generate`.
-5. Apply local migrations with `npm run db:migrate`.
-6. Start development with `npm run dev`.
+3. Install dependencies with `pnpm install`.
+4. Generate the Prisma client with `pnpm run db:generate`.
+5. Apply local migrations with `pnpm run db:migrate`.
+6. Start development with `pnpm run dev`.
 
 The initial database schema and provider interfaces are foundations, not evidence of production payment-provider approval or regulatory readiness.
 
