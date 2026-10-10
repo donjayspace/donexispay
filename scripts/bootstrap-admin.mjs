@@ -1,4 +1,7 @@
-import "dotenv/config";
+import dotenv from "dotenv";
+// Next.js local development commonly stores variables in .env.local.
+dotenv.config({ path: ".env.local" });
+dotenv.config();
 import { randomBytes, scrypt as scryptCallback } from "node:crypto";
 import { promisify } from "node:util";
 import { PrismaClient } from "@prisma/client";
