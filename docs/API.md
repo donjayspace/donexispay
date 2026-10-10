@@ -1,47 +1,31 @@
-# API Conventions
+# API Design and Integration Guide
 
-## General
-- Use versioned paths for stable public APIs when introduced, e.g. `/api/v1`.
-- Use JSON request and response bodies.
-- Validate every untrusted request with a schema.
-- Keep route handlers thin and call services.
-- Return a request/correlation ID where available.
-- Never return stack traces, provider secrets, raw provider payloads, or internal database errors.
-
-## Response format
-Success responses should return a stable resource representation. Errors should use a consistent structure:
-```json
-{
-  "error": {
-    "code": "VALIDATION_ERROR",
-    "message": "The request did not pass validation.",
-    "requestId": "optional-correlation-id"
-  }
-}
-```
-
-## Status codes
-- 200: successful read or operation.
-- 201: resource created.
-- 202: accepted for asynchronous processing.
-- 400: malformed or invalid request.
-- 401: authentication required or invalid.
-- 403: authenticated but not authorized.
-- 404: resource not found or intentionally concealed.
-- 409: idempotency or state conflict.
-- 422: syntactically valid but semantically ineligible operation, if adopted consistently.
-- 429: rate limit exceeded.
-- 500: unexpected internal error.
-- 503: required provider or operation temporarily unavailable.
-
-## Idempotency
-Financial create operations must accept an idempotency key. Scope it to merchant and operation; persist a request fingerprint; reject reuse with a different payload. A retry must return the existing operation/result or an explicit in-progress response, not create a second financial operation.
+## Conventions
+Merchant APIs use versioned paths under `/api/v1`. Use JSON, schema validation, safe errors, and a request/correlation ID. Route handlers authenticate, validate, invoke a module service, and map a safe response. Never expose stack traces, SQL errors, secrets, or raw provider payloads.
 
 ## Authentication and tenant isolation
-Every protected route must authenticate the caller and derive merchant identity from verified credentials/session state—not a body field supplied by the client. All reads and writes must be scoped to that identity.
+Use dedicated merchant API keys in the Authorization header. Store a hash, use a non-secret lookup prefix, enforce environment and scopes, and support expiry/revocation. Customer sessions and admin sessions are not substitutes for merchant API credentials. Every read/write must be scoped to the authenticated merchant.
 
-## Pagination
-Use bounded pagination for list endpoints. Set maximum page size and stable ordering. Do not return unbounded transaction lists.
+## Idempotency
+Payment-affecting POST requests require an `Idempotency-Key`. Scope it by merchant and operation and store a request fingerprint. Same key + same payload replays the original result; same key + different payload returns conflict. A database uniqueness constraint arbitrates concurrent requests. Do not expire keys while an operation can still be unresolved.
 
-## Health
-The current `GET /api/health` endpoint checks only that the application process responds. It does not indicate database, queue, or provider readiness.
+## Response design
+Return stable resource IDs, status, amount in minor units as a decimal string, currency, timestamps, and next action when applicable. BigInt must be stringified. Errors should include a stable code, safe message, request ID, and safe field errors where appropriate.
+
+Suggested HTTP statuses: 200 read/replay, 201 created, 202 pending provider operation, 400 invalid input, 401 invalid credentials, 403 insufficient scope, 404 missing or not visible to this merchant, 409 idempotency/state conflict, 422 business rule violation, 429 rate limited, 500 unexpected failure, 502/503 upstream unavailable.
+
+## Pagination and filtering
+Use bounded page sizes, stable cursor pagination for large lists, allowlisted sort fields, and explicit filters. Never accept arbitrary Prisma field names from request parameters.
+
+## URL and webhook safety
+Validate return URLs against an explicit policy to prevent open redirects. Verify inbound provider webhooks using provider-specific rules. Sign outbound merchant webhooks with endpoint secrets and include event IDs/timestamps. Protect server-side outbound requests against SSRF.
+
+## Versioning
+Additive optional fields are generally compatible; removing fields or changing status semantics requires versioning/deprecation. Document scopes, retries, idempotency, and sandbox/live behavior before publishing an endpoint.
+
+## Endpoint release checklist
+- [ ] Request/response schema and error codes documented.
+- [ ] Authentication, scope, tenant isolation, rate limits, and audit reviewed.
+- [ ] Duplicate/concurrent request behavior defined.
+- [ ] Tests cover validation, authorization, retries, and provider uncertainty.
+- [ ] Documentation matches the route's actual implementation.
