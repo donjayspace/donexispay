@@ -1,9 +1,11 @@
+import { requireAdminPermission } from "@/server/modules/auth/admin/permissions";
 import Link from "next/link";
 import { getPlatformOverview } from "@/server/modules/analytics/service";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminOverviewPage() {
+  await requireAdminPermission("overview");
   const overview = await getPlatformOverview();
   const metrics = [
     { label: "Registered users", value: overview.users.toLocaleString(), note: "Customer accounts" },
