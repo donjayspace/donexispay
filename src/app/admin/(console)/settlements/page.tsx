@@ -1,6 +1,8 @@
+import { requireAdminPermission } from "@/server/modules/auth/admin/permissions";
 import { listSettlements } from "@/server/modules/settlements/service";
 export const dynamic = "force-dynamic";
 export default async function AdminSettlementsPage() {
+  await requireAdminPermission("settlements");
   const rows = await listSettlements({ take: 100 });
   return <div className="admin-content"><section className="admin-page-heading"><div><p className="section-kicker">Finance operations</p><h1>Settlements</h1><p>Review provider settlement statement records. These records do not independently confirm a bank payout.</p></div></section><section className="admin-panel"><header className="admin-panel-heading"><div><h2>Settlement records</h2><p>Imported statement totals, fees, and net values.</p></div></header>{rows.length ? <div className="admin-table-scroll"><table className="admin-data-table"><thead><tr><th>Provider</th><th>Reference</th><th>Gross</th><th>Fees</th><th>Net</th><th>Status</th><th>Settlement date</th></tr></thead><tbody>{rows.map((r) => <tr key={r.id}><td>{r.providerId}</td><td><code>{r.providerReference}</code></td><td>{r.currency} {r.grossMinor.toString()}</td><td>{r.currency} {r.feeMinor.toString()}</td><td><strong>{r.currency} {r.netMinor.toString()}</strong></td><td><span className="admin-status">{r.status}</span></td><td>{r.settlementDate?.toLocaleDateString() ?? "—"}</td></tr>)}</tbody></table></div> : <div className="admin-empty"><strong>No settlement records</strong><p>Settlement records appear after a provider statement is imported.</p></div>}</section></div>;
 }
