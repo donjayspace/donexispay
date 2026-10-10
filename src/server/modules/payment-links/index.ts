@@ -1,1 +1,1 @@
-export { createPaymentLink, listMerchantPaymentLinks } from "./service";
+export { createCheckoutSessionFromPaymentLink, createPaymentLink, listMerchantPaymentLinks } from "./service";
