@@ -16,6 +16,11 @@ enum MerchantStatus {
   CLOSED
 }
 
+enum ApiKeyEnvironment {
+  TEST
+  LIVE
+}
+
 enum CheckoutStatus {
   OPEN
   PROCESSING
@@ -61,6 +66,7 @@ model Merchant {
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
 
+  apiKeys          ApiKey[]
   checkoutSessions CheckoutSession[]
   payments         Payment[]
   idempotencyKeys  IdempotencyRecord[]
@@ -68,19 +74,38 @@ model Merchant {
   @@index([status, createdAt])
 }
 
+model ApiKey {
+  id          String           @id @default(cuid())
+  merchantId  String
+  name        String
+  keyPrefix   String           @unique
+  secretHash  String
+  environment ApiKeyEnvironment
+  scopes      String[]         @default([])
+  lastUsedAt  DateTime?
+  expiresAt   DateTime?
+  revokedAt   DateTime?
+  createdAt   DateTime         @default(now())
+
+  merchant Merchant @relation(fields: [merchantId], references: [id], onDelete: Restrict)
+
+  @@index([merchantId, revokedAt])
+  @@index([expiresAt])
+}
+
 model CheckoutSession {
-  id                String         @id @default(cuid())
-  merchantId        String
-  orderReference    String
-  amountMinor       BigInt
-  currency          String         @db.VarChar(3)
-  description       String?
-  status            CheckoutStatus @default(OPEN)
-  expiresAt         DateTime
-  successUrl        String?
-  cancelUrl         String?
-  createdAt         DateTime       @default(now())
-  updatedAt         DateTime       @updatedAt
+  id             String         @id @default(cuid())
+  merchantId     String
+  orderReference String
+  amountMinor    BigInt
+  currency       String         @db.VarChar(3)
+  description    String?
+  status         CheckoutStatus @default(OPEN)
+  expiresAt      DateTime
+  successUrl     String?
+  cancelUrl      String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
 
   merchant Merchant  @relation(fields: [merchantId], references: [id], onDelete: Restrict)
   payments Payment[]
@@ -115,7 +140,7 @@ model Payment {
 }
 
 model PaymentAttempt {
-  id                String              @id @default(cuid())
+  id                String               @id @default(cuid())
   paymentId         String
   providerId        String
   providerPaymentId String?
@@ -134,15 +159,15 @@ model PaymentAttempt {
 }
 
 model ProviderEvent {
-  id                String             @id @default(cuid())
-  providerId        String
-  providerEventId   String
-  eventType         String
-  status            ProviderEventStatus @default(RECEIVED)
-  payload           Json
-  receivedAt        DateTime           @default(now())
-  processedAt       DateTime?
-  lastError         String?
+  id              String             @id @default(cuid())
+  providerId      String
+  providerEventId String
+  eventType       String
+  status          ProviderEventStatus @default(RECEIVED)
+  payload         Json
+  receivedAt      DateTime           @default(now())
+  processedAt     DateTime?
+  lastError       String?
 
   @@unique([providerId, providerEventId])
   @@index([status, receivedAt])
@@ -166,16 +191,16 @@ model IdempotencyRecord {
 }
 
 model AuditLog {
-  id          String   @id @default(cuid())
-  actorType   String
-  actorId     String?
-  action      String
-  targetType  String
-  targetId    String?
-  outcome     String
-  requestId   String?
-  metadata    Json?
-  createdAt   DateTime @default(now())
+  id         String   @id @default(cuid())
+  actorType  String
+  actorId    String?
+  action     String
+  targetType String
+  targetId   String?
+  outcome    String
+  requestId  String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
 
   @@index([targetType, targetId, createdAt])
   @@index([actorType, actorId, createdAt])
