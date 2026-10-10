@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { providerWebhookRegistry } from "@/server/modules/webhooks/registry";
 import { recordVerifiedProviderEvent } from "@/server/modules/webhooks/receive-service";
+import { processProviderEvent } from "@/server/modules/webhooks/process-service";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -38,6 +39,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ pr
       return NextResponse.json({ error: "Invalid provider event." }, { status: 400, headers: { "Cache-Control": "no-store" } });
     }
     const result = await recordVerifiedProviderEvent(provider, verified);
+    await processProviderEvent(result.record.id);
     return NextResponse.json(
       { received: true, duplicate: result.duplicate },
       { status: 200, headers: { "Cache-Control": "no-store" } },
