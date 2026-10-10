@@ -1,6 +1,5 @@
 import "server-only";
 import type { OAuthProvider } from "./types";
-import { env } from "@/lib/env";
 
 type ProviderConfig = {
   clientId: string;
