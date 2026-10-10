@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
-import { ZodError, z } from "zod";
+import { z } from "zod";
 import { authenticateMerchantApiKey } from "@/server/modules/auth/api-key";
 import { createCheckoutSessionSchema } from "@/server/modules/checkout/schemas/create-checkout-session";
 import { createCheckoutSession } from "@/server/modules/checkout/services/create-checkout-session";
@@ -12,7 +12,10 @@ export const dynamic = "force-dynamic";
 const idempotencyKeySchema = z.string().trim().min(8).max(200);
 
 export async function POST(request: NextRequest) {
-  const requestId = request.headers.get("x-request-id") ?? randomUUID();
+  const suppliedRequestId = request.headers.get("x-request-id") ?? "";
+  const requestId = /^[a-zA-Z0-9._-]{1,100}$/.test(suppliedRequestId)
+    ? suppliedRequestId
+    : randomUUID();
 
   try {
     const principal = await authenticateMerchantApiKey(request.headers.get("authorization"));
@@ -39,10 +42,7 @@ export async function POST(request: NextRequest) {
     });
 
     return NextResponse.json(
-      {
-        data: result.result,
-        requestId,
-      },
+      { data: result.result, requestId },
       {
         status: result.replayed ? 200 : 201,
         headers: {
